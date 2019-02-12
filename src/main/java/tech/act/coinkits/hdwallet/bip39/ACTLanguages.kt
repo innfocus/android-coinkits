@@ -3,14 +3,18 @@ package tech.act.coinkits.hdwallet.bip39
 enum class ACTLanguages {
     English {
         override fun words() = "".englishMnemonics()
+        override fun nameLanguage() = "English"
     },
     Japanese{
         override fun words() = "".japaneseMnemonics()
+        override fun nameLanguage() = "Japanese"
     },
     Chinese{
         override fun words() = "".chineseMnemonics()
+        override fun nameLanguage() = "Chinese"
     };
     abstract fun words(): Array<String>
+    abstract fun nameLanguage(): String
     companion object {
 
         fun types(): Array<ACTLanguages> = arrayOf(ACTLanguages.English, ACTLanguages.Japanese, ACTLanguages.Chinese)
