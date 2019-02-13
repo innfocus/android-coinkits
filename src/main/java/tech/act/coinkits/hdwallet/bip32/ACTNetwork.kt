@@ -17,6 +17,8 @@ enum class ACTCoin {
         override fun minimumValue() = 0.00001
         override fun regex()        = "(?:([a-km-zA-HJ-NP-Z1-9]{26,35}))"
         override fun algorithm()    = Algorithm.Secp256k1
+        override fun baseMainNetUrl() = "https://blockchain.info"
+        override fun baseTestNetUrl() = "https://testnet.blockchain.info"
     },
     Ethereum{
         override fun nameCoin()     = "Ethereum"
@@ -24,6 +26,8 @@ enum class ACTCoin {
         override fun minimumValue() = 0.00001
         override fun regex()        = "(?:((0x|0X|)[a-fA-F0-9]{40,}))"
         override fun algorithm()    = Algorithm.Secp256k1
+        override fun baseMainNetUrl() = ""
+        override fun baseTestNetUrl() = ""
     },
     Cardano{
 
@@ -32,12 +36,16 @@ enum class ACTCoin {
         override fun minimumValue() = 0.1
         override fun regex()        = "(?:([a-km-zA-HJ-NP-Z1-9]{25,}))"
         override fun algorithm()    = Algorithm.Ed25519
+        override fun baseMainNetUrl() = ""
+        override fun baseTestNetUrl() = ""
     };
     abstract fun nameCoin()     : String
     abstract fun symbolName()   : String
     abstract fun minimumValue() : Double
     abstract fun regex()        : String
     abstract fun algorithm()    : Algorithm
+    abstract fun baseMainNetUrl() : String
+    abstract fun baseTestNetUrl() : String
 }
 
 class ACTNetwork constructor(val coin: ACTCoin, private val isTestNet: Boolean) {

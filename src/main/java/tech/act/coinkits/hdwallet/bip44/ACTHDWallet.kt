@@ -8,14 +8,13 @@ import tech.act.coinkits.hdwallet.core.ACTDerivationNode
 import tech.act.coinkits.hdwallet.core.crypto.ACTCryto
 import tech.act.coinkits.hdwallet.core.helpers.fromHexToByteArray
 
-class ACTHDWallet {
+class ACTHDWallet @Throws(ACTBIP39Exception::class) constructor(mnemonic: String) {
 
     private val seed        : ByteArray
     private val entropy     : ByteArray
     private val language    : ACTLanguages
 
-    @Throws(ACTBIP39Exception::class)
-    constructor(mnemonic: String) {
+    init {
         try{
             val seedString      = ACTBIP39.deterministicSeedString(mnemonic)
             val entropyString   = ACTBIP39.entropyString(mnemonic, true)
