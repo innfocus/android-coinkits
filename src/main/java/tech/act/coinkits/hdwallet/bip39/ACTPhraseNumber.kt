@@ -3,23 +3,23 @@ package tech.act.coinkits.hdwallet.bip39
 enum class ACTPhraseNumber(val value: Int) {
     Phrase12(12) {
         override fun bitsNumber(): Int      {return 128}
-        override fun namePhrase(): String   {return "Phrase12"}
+        override fun namePhrase(): String   {return "12 Phrase"}
     },
     Phrase15(15){
         override fun bitsNumber(): Int      {return 160}
-        override fun namePhrase(): String   {return "Phrase15"}
+        override fun namePhrase(): String   {return "15 Phrase"}
     },
     Phrase18(18){
         override fun bitsNumber(): Int      {return 192}
-        override fun namePhrase(): String   {return "Phrase18"}
+        override fun namePhrase(): String   {return "18 Phrase"}
     },
     Phrase21(21){
         override fun bitsNumber(): Int      {return 224}
-        override fun namePhrase(): String   {return "Phrase21"}
+        override fun namePhrase(): String   {return "21 Phrase"}
     },
     Phrase24(24){
         override fun bitsNumber(): Int      {return 256}
-        override fun namePhrase(): String   {return "Phrase24"}
+        override fun namePhrase(): String   {return "24 Phrase"}
     };
     abstract fun bitsNumber()   : Int
     abstract fun namePhrase()   : String
