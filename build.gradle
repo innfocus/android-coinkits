@@ -13,7 +13,17 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
+        flavorDimensions "mode"
+        productFlavors {
+            mainNet{
+                buildConfigField "boolean", "BITCOIN_TESTNET", "false"
+                dimension "mode"
+            }
+            appTestNet{
+                buildConfigField "boolean", "BITCOIN_TESTNET", "true"
+                dimension "mode"
+            }
+        }
     }
 
     buildTypes {
@@ -43,8 +53,7 @@ dependencies {
     implementation 'com.squareup.retrofit2:converter-gson:2.5.0'
     implementation 'com.squareup.okhttp3:okhttp:3.12.1'
     implementation "com.squareup.retrofit2:adapter-rxjava2:2.5.0"
-    //BTC J
-    implementation 'org.bitcoinj:bitcoinj-core:0.14.7'
+
     //RX
     implementation 'io.reactivex.rxjava2:rxjava:2.2.0'
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.0'
