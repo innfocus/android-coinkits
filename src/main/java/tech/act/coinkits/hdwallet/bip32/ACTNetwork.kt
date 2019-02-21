@@ -40,7 +40,7 @@ enum class ACTCoin {
         override fun nameCoin()     = "Cardano"
         override fun symbolName()   = "ADA"
         override fun minimumValue() = 0.1
-        override fun unit(): BigDecimal = BigDecimal.ONE
+        override fun unit(): BigDecimal = BigDecimal(1000000)
         override fun regex()        = "(?:([a-km-zA-HJ-NP-Z1-9]{25,}))"
         override fun algorithm()    = Algorithm.Ed25519
         override fun baseApiUrl() = ""
