@@ -21,6 +21,7 @@ import tech.act.coinkits.hdwallet.bip32.ACTCoin
 import tech.act.coinkits.hdwallet.core.helpers.Base58
 import tech.act.coinkits.hdwallet.core.helpers.prefix
 import tech.act.coinkits.hdwallet.core.helpers.toHexString
+import java.util.*
 
 
 class BTCAPI {
@@ -141,6 +142,7 @@ class Gbtc {
                                                         tran.outPuts = outputsFilter
                                                     }
                                                     tran.amount = tran.outPuts.map { it.value }.sum()
+                                                    tran.timeCreate = Date(tran._time * 1000L)
                                                 }
                                                 completionHandler.completionHandler(trans, null)
                                                 return
