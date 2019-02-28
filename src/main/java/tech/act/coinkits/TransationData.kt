@@ -7,10 +7,10 @@ import tech.act.coinkits.cardano.helpers.ADACoin
 import tech.act.coinkits.cardano.networking.models.ADATransaction
 import tech.act.coinkits.cardano.networking.models.ADATransactionInOut
 import tech.act.coinkits.hdwallet.bip32.ACTCoin
-import tech.act.coinkits.hdwallet.bip44.ACTAddress
+import java.io.Serializable
 import java.util.*
 
-class TransationData {
+class TransationData : Serializable {
     var amount          : Float = 0.0f
     var fee             : Float = 0.0f
     var iD              : String = ""
