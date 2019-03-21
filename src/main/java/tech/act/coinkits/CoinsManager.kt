@@ -4,12 +4,15 @@ import tech.act.coinkits.bitcoin.model.BTCTransactionData
 import tech.act.coinkits.bitcoin.networking.BTCBalanceHandle
 import tech.act.coinkits.bitcoin.networking.BTCTransactionsHandle
 import tech.act.coinkits.bitcoin.networking.Gbtc
-import tech.act.coinkits.cardano.helpers.ADACoin
 import tech.act.coinkits.cardano.networking.*
 import tech.act.coinkits.cardano.networking.models.ADATransaction
-import tech.act.coinkits.hdwallet.bip32.*
-import tech.act.coinkits.hdwallet.bip39.*
-import tech.act.coinkits.hdwallet.bip44.*
+import tech.act.coinkits.hdwallet.bip32.ACTCoin
+import tech.act.coinkits.hdwallet.bip32.ACTNetwork
+import tech.act.coinkits.hdwallet.bip32.ACTPrivateKey
+import tech.act.coinkits.hdwallet.bip32.Change
+import tech.act.coinkits.hdwallet.bip39.ACTBIP39Exception
+import tech.act.coinkits.hdwallet.bip44.ACTAddress
+import tech.act.coinkits.hdwallet.bip44.ACTHDWallet
 
 interface BalanceHandle         { fun completionHandler(balance: Float, success: Boolean)}
 interface TransactionsHandle    { fun completionHandler(transations:Array<TransationData>?, errStr: String)}
@@ -303,7 +306,7 @@ class CoinsManager: ICoinsManager {
         if (adds.isNotEmpty()) {
             Gada.shared.getBalance(adds.toTypedArray(), object:ADABalanceHandle {
                 override fun completionHandler(balance: Float, err: Throwable?) {
-                    if ((err != null) or (balance < 0)) {
+                    if ((err != null)) {
                         completionHandler.completionHandler(0.0f, false)
                     }else{
                         completionHandler.completionHandler(balance, true)
