@@ -50,7 +50,7 @@ class CoinsManager: ICoinsManager {
     private var prvKeysManager      = mutableMapOf<String, Array<ACTPrivateKey>>()
     private var extendPrvKeysNumber = mutableMapOf<String, Int>()
     private var addressesManager    = mutableMapOf<String, Array<ACTAddress>>()
-    private var networkManager      = mapOf(ACTCoin.Bitcoin.symbolName()    to ACTNetwork(ACTCoin.Bitcoin   , true),
+            var networkManager      = mapOf(ACTCoin.Bitcoin.symbolName()    to ACTNetwork(ACTCoin.Bitcoin   , false),
                                             ACTCoin.Ethereum.symbolName()   to ACTNetwork(ACTCoin.Ethereum  , false),
                                             ACTCoin.Cardano.symbolName()    to ACTNetwork(ACTCoin.Cardano   , false))
             var mnemonicRecover     = ""
