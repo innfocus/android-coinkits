@@ -22,8 +22,8 @@ enum class ACTCoin {
         override fun regex()        = "(?:([a-km-zA-HJ-NP-Z1-9]{26,35}))"
         override fun algorithm()    = Algorithm.Secp256k1
         override fun baseApiUrl() : String{
-                if (BuildConfig.BITCOIN_TESTNET)
-                    return "https://testnet.blockchain.info"
+//                if (BuildConfig.BITCOIN_TESTNET)
+//                    return "https://testnet.blockchain.info"
                 return  "https://blockchain.info"
         }
     },
