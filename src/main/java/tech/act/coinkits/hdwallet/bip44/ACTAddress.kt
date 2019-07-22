@@ -29,7 +29,7 @@ class ACTAddress {
         if (publicKey != null) {
             when(publicKey!!.network.coin) {
                 ACTCoin.Bitcoin -> {
-                    return  byteArrayOf(publicKey!!.network.pubkeyhash()) + ACTCryto.sha256ripemd160(publicKey!!.raw!!)
+                    return  byteArrayOf(publicKey!!.network.pubkeyhash()) plus ACTCryto.sha256ripemd160(publicKey!!.raw!!)
                 }
                 ACTCoin.Ethereum -> {
                     val pubKeyUnpressedData = ACTCryto.convertToUncompressed(publicKey!!.raw!!)
@@ -66,7 +66,7 @@ class ACTAddress {
                 return when(network!!.coin) {
                     ACTCoin.Bitcoin -> {
                         val cs = ACTCryto.doubleSHA256(r!!).copyOfRange(0, 4)
-                        network!!.addressPrefix() + Base58.encode(r!! + cs)
+                        network!!.addressPrefix() + Base58.encode(r!! plus cs)
                     }
                     ACTCoin.Ethereum -> {
                         network!!.addressPrefix() + ACTEIP55.encode(r!!)

@@ -18,6 +18,7 @@ interface EstimateFeeHandle     { fun completionHandler(estimateFee: Double, err
 
 interface ICoinsManager {
     fun getHDWallet     (): ACTHDWallet?
+    fun setNetworks     (networks: Array<ACTNetwork>)
     fun cleanAll        ()
     fun firstAddress    (coin: ACTCoin): ACTAddress?
     fun addresses       (coin: ACTCoin): Array<ACTAddress>?
@@ -42,14 +43,14 @@ class CoinsManager: ICoinsManager {
     companion object {
         val shared = CoinsManager()
     }
-            val coinsSupported      = arrayListOf(ACTCoin.Bitcoin, ACTCoin.Ethereum, ACTCoin.Cardano)
     private var hdWallet            : ACTHDWallet? = null
     private var prvKeysManager      = mutableMapOf<String, Array<ACTPrivateKey>>()
     private var extendPrvKeysNumber = mutableMapOf<String, Int>()
     private var addressesManager    = mutableMapOf<String, Array<ACTAddress>>()
-    private var networkManager      = mapOf(ACTCoin.Bitcoin.symbolName()    to ACTNetwork(ACTCoin.Bitcoin   , true),
-                                            ACTCoin.Ethereum.symbolName()   to ACTNetwork(ACTCoin.Ethereum  , false),
-                                            ACTCoin.Cardano.symbolName()    to ACTNetwork(ACTCoin.Cardano   , false))
+    private var coinsSupported      = arrayListOf(ACTCoin.Bitcoin, ACTCoin.Ethereum, ACTCoin.Cardano)
+    private var networkManager      = mutableMapOf( ACTCoin.Bitcoin.symbolName()    to ACTNetwork(ACTCoin.Bitcoin   , true),
+                                                    ACTCoin.Ethereum.symbolName()   to ACTNetwork(ACTCoin.Ethereum  , true),
+                                                    ACTCoin.Cardano.symbolName()    to ACTNetwork(ACTCoin.Cardano   , false))
             var mnemonicRecover     = ""
             var mnemonic            = ""
 
@@ -64,6 +65,21 @@ class CoinsManager: ICoinsManager {
                     null
                 }
             }
+        }
+    }
+
+    override fun setNetworks(networks: Array<ACTNetwork>) {
+        /* Store mnemonic before clean data */
+        val mn = mnemonic
+        cleanAll()
+        /* Restore mnemonic */
+        mnemonic = mn
+        coinsSupported.clear()
+        networkManager.clear()
+        networks.forEach {
+            val coin = it.coin
+            coinsSupported.add(coin)
+            networkManager[coin.symbolName()] = it
         }
     }
 
