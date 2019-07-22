@@ -18,12 +18,10 @@ enum class ACTCoin {
         override fun nameCoin()     = "Bitcoin"
         override fun symbolName()   = "BTC"
         override fun minimumValue() = 0.00001
-        override fun unit() = BigDecimal(100000000)
+        override fun unit()         = BigDecimal(100000000)
         override fun regex()        = "(?:([a-km-zA-HJ-NP-Z1-9]{26,35}))"
         override fun algorithm()    = Algorithm.Secp256k1
         override fun baseApiUrl() : String{
-//                if (BuildConfig.BITCOIN_TESTNET)
-//                    return "https://testnet.blockchain.info"
                 return  "https://blockchain.info"
         }
     },
@@ -31,7 +29,7 @@ enum class ACTCoin {
         override fun nameCoin()     = "Ethereum"
         override fun symbolName()   = "ETH"
         override fun minimumValue() = 0.00001
-        override fun unit(): BigDecimal = BigDecimal(1000000000000000000)
+        override fun unit()         = BigDecimal(1000000000000000000)
         override fun regex()        = "(?:((0x|0X|)[a-fA-F0-9]{40,}))"
         override fun algorithm()    = Algorithm.Secp256k1
         override fun baseApiUrl() = ""
@@ -40,9 +38,18 @@ enum class ACTCoin {
         override fun nameCoin()     = "Cardano"
         override fun symbolName()   = "ADA"
         override fun minimumValue() = 0.1
-        override fun unit(): BigDecimal = BigDecimal(1000000)
+        override fun unit()         = BigDecimal(1000000)
         override fun regex()        = "(?:([a-km-zA-HJ-NP-Z1-9]{25,}))"
         override fun algorithm()    = Algorithm.Ed25519
+        override fun baseApiUrl() = ""
+    },
+    Ripple{
+        override fun nameCoin()     = "Ripple"
+        override fun symbolName()   = "XRP"
+        override fun minimumValue() = 0.00001
+        override fun unit()         = BigDecimal(1000000)
+        override fun regex()        = "(?:([a-km-zA-HJ-NP-Z1-9]{26,35}))"
+        override fun algorithm()    = Algorithm.Secp256k1
         override fun baseApiUrl() = ""
     };
     abstract fun nameCoin()     : String
@@ -50,17 +57,18 @@ enum class ACTCoin {
     abstract fun minimumValue() : Double
     abstract fun regex()        : String
     abstract fun algorithm()    : Algorithm
-    abstract fun baseApiUrl() : String
-    abstract fun unit(): BigDecimal
+    abstract fun baseApiUrl()   : String
+    abstract fun unit()         : BigDecimal
 }
 
 class ACTNetwork constructor(val coin: ACTCoin, private val isTestNet: Boolean) {
 
     fun coinType(): Int {
         return when(coin) {
-            ACTCoin.Bitcoin     -> 0
+            ACTCoin.Bitcoin     -> if (isTestNet) 1 else 0
             ACTCoin.Ethereum    -> 60
             ACTCoin.Cardano     -> 1815
+            ACTCoin.Ripple      -> 144
         }
     }
 
@@ -101,6 +109,7 @@ class ACTNetwork constructor(val coin: ACTCoin, private val isTestNet: Boolean) 
             ACTCoin.Bitcoin     -> if (chain == Change.Internal) 10 else 100
             ACTCoin.Ethereum    -> if (chain == Change.Internal) 0  else 1
             ACTCoin.Cardano     -> if (chain == Change.Internal) 0  else 50
+            ACTCoin.Ripple      -> if (chain == Change.Internal) 0  else 1
         }
     }
 
@@ -109,6 +118,7 @@ class ACTNetwork constructor(val coin: ACTCoin, private val isTestNet: Boolean) 
             ACTCoin.Bitcoin     -> if (chain == Change.Internal) 0 else 10
             ACTCoin.Ethereum    -> if (chain == Change.Internal) 0 else 0
             ACTCoin.Cardano     -> if (chain == Change.Internal) 0 else 0
+            ACTCoin.Ripple      -> if (chain == Change.Internal) 0 else 0
         }
     }
 
@@ -119,6 +129,7 @@ class ACTNetwork constructor(val coin: ACTCoin, private val isTestNet: Boolean) 
                     ACTCoin.Bitcoin     -> "https://www.blockchain.com/btc"
                     ACTCoin.Ethereum    -> "https://etherscan.io"
                     ACTCoin.Cardano     -> "https://cardanoexplorer.com"
+                    ACTCoin.Ripple      -> "https://bithomp.com"
                 }
             }
             true -> {
@@ -126,6 +137,7 @@ class ACTNetwork constructor(val coin: ACTCoin, private val isTestNet: Boolean) 
                     ACTCoin.Bitcoin     -> "https://testnet.blockchain.info"
                     ACTCoin.Ethereum    -> "https://ropsten.etherscan.io"
                     ACTCoin.Cardano     -> "https://cardanoexplorer.com"
+                    ACTCoin.Ripple      -> "https://test.bithomp.com"
                 }
             }
         }
@@ -133,6 +145,6 @@ class ACTNetwork constructor(val coin: ACTCoin, private val isTestNet: Boolean) 
     }
 
     fun explorerForTX(): String {
-        return explorer() + "/tx/"
+        return explorer() + if (coin == ACTCoin.Ripple) "/explorer/" else "/tx/"
     }
 }

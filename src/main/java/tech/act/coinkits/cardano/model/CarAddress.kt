@@ -21,7 +21,7 @@ class CarAddress {
         if ((publicKey != null) and (chainCode != null)) {
             this.publicKey = publicKey
             var output          = ByteArrayOutputStream()
-            val xPub            = publicKey!!.bytes() + chainCode!!
+            val xPub            = publicKey!!.bytes() plus chainCode!!
             val addrType        = UnsignedInteger(CarAddressType.ATPubKey.value.toLong())
             val addrAttributes  = Map(0)
             var cb              = CborBuilder() .addArray()
