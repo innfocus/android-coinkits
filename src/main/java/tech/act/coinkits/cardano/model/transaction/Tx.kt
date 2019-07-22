@@ -5,7 +5,6 @@ import co.nstant.`in`.cbor.CborEncoder
 import co.nstant.`in`.cbor.model.*
 import co.nstant.`in`.cbor.model.Map
 import tech.act.coinkits.hdwallet.core.helpers.blake2b
-import tech.act.coinkits.hdwallet.core.helpers.plus
 import tech.act.coinkits.hdwallet.core.helpers.toHexString
 import java.io.ByteArrayOutputStream
 
@@ -57,6 +56,6 @@ class Tx {
         }
         val output = ByteArrayOutputStream()
         CborEncoder(output).encode(builder.end().add(Map(0)).build())
-        return byteArrayOf(0x83.toByte()) plus output.toByteArray()
+        return byteArrayOf(0x83.toByte()) + output.toByteArray()
     }
 }
