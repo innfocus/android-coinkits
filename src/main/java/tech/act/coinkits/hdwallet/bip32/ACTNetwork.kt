@@ -1,6 +1,5 @@
 package tech.act.coinkits.hdwallet.bip32
 
-import tech.act.coinkits.BuildConfig
 import java.math.BigDecimal
 
 enum class Change(val value: Int) {
@@ -15,50 +14,65 @@ enum class Algorithm {
 
 enum class ACTCoin {
     Bitcoin{
-        override fun nameCoin()     = "Bitcoin"
-        override fun symbolName()   = "BTC"
-        override fun minimumValue() = 0.00001
-        override fun unit()         = BigDecimal(100000000)
-        override fun regex()        = "(?:([a-km-zA-HJ-NP-Z1-9]{26,35}))"
-        override fun algorithm()    = Algorithm.Secp256k1
-        override fun baseApiUrl() : String{
+        override fun feeDefault()       = 0.0
+        override fun minimumAmount()    = 0.0
+        override fun supportMemo()      = false
+        override fun nameCoin()         = "Bitcoin"
+        override fun symbolName()       = "BTC"
+        override fun minimumValue()     = 0.00001
+        override fun unit()             = BigDecimal(100000000)
+        override fun regex()            = "(?:([a-km-zA-HJ-NP-Z1-9]{26,35}))"
+        override fun algorithm()        = Algorithm.Secp256k1
+        override fun baseApiUrl()       : String{
                 return  "https://blockchain.info"
         }
     },
     Ethereum{
-        override fun nameCoin()     = "Ethereum"
-        override fun symbolName()   = "ETH"
-        override fun minimumValue() = 0.00001
-        override fun unit()         = BigDecimal(1000000000000000000)
-        override fun regex()        = "(?:((0x|0X|)[a-fA-F0-9]{40,}))"
-        override fun algorithm()    = Algorithm.Secp256k1
-        override fun baseApiUrl() = ""
+        override fun feeDefault()       = 0.0
+        override fun minimumAmount()    = 0.0
+        override fun supportMemo()      = false
+        override fun nameCoin()         = "Ethereum"
+        override fun symbolName()       = "ETH"
+        override fun minimumValue()     = 0.00001
+        override fun unit()             = BigDecimal(1000000000000000000)
+        override fun regex()            = "(?:((0x|0X|)[a-fA-F0-9]{40,}))"
+        override fun algorithm()        = Algorithm.Secp256k1
+        override fun baseApiUrl()       = ""
     },
     Cardano{
-        override fun nameCoin()     = "Cardano"
-        override fun symbolName()   = "ADA"
-        override fun minimumValue() = 0.1
-        override fun unit()         = BigDecimal(1000000)
-        override fun regex()        = "(?:([a-km-zA-HJ-NP-Z1-9]{25,}))"
-        override fun algorithm()    = Algorithm.Ed25519
-        override fun baseApiUrl() = ""
+        override fun feeDefault()       = 0.0
+        override fun minimumAmount()    = 0.0
+        override fun supportMemo()      = false
+        override fun nameCoin()         = "Cardano"
+        override fun symbolName()       = "ADA"
+        override fun minimumValue()     = 0.1
+        override fun unit()             = BigDecimal(1000000)
+        override fun regex()            = "(?:([a-km-zA-HJ-NP-Z1-9]{25,}))"
+        override fun algorithm()        = Algorithm.Ed25519
+        override fun baseApiUrl()       = ""
     },
     Ripple{
-        override fun nameCoin()     = "Ripple"
-        override fun symbolName()   = "XRP"
-        override fun minimumValue() = 0.00001
-        override fun unit()         = BigDecimal(1000000)
-        override fun regex()        = "(?:([a-km-zA-HJ-NP-Z1-9]{26,35}))"
-        override fun algorithm()    = Algorithm.Secp256k1
-        override fun baseApiUrl() = ""
+        override fun feeDefault()       = 0.000012
+        override fun minimumAmount()    = 20.0
+        override fun supportMemo()      = true
+        override fun nameCoin()         = "Ripple"
+        override fun symbolName()       = "XRP"
+        override fun minimumValue()     = 0.00001
+        override fun unit()             = BigDecimal(1000000)
+        override fun regex()            = "(?:([a-km-zA-HJ-NP-Z1-9]{26,35}))"
+        override fun algorithm()        = Algorithm.Secp256k1
+        override fun baseApiUrl()       = ""
     };
-    abstract fun nameCoin()     : String
-    abstract fun symbolName()   : String
-    abstract fun minimumValue() : Double
-    abstract fun regex()        : String
-    abstract fun algorithm()    : Algorithm
-    abstract fun baseApiUrl()   : String
-    abstract fun unit()         : BigDecimal
+    abstract fun nameCoin()         : String
+    abstract fun symbolName()       : String
+    abstract fun minimumValue()     : Double
+    abstract fun regex()            : String
+    abstract fun algorithm()        : Algorithm
+    abstract fun baseApiUrl()       : String
+    abstract fun unit()             : BigDecimal
+    abstract fun feeDefault()       : Double
+    abstract fun minimumAmount()    : Double
+    abstract fun supportMemo()      : Boolean
 }
 
 class ACTNetwork constructor(val coin: ACTCoin, private val isTestNet: Boolean) {
