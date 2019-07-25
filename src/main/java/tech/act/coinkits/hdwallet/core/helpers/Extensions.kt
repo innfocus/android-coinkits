@@ -206,7 +206,8 @@ fun Int.int32Bytes(): ByteArray {
 
 fun Double.int64Bytes(): ByteArray {
     val bb = ByteBuffer.allocate(8)
-    bb.putDouble(this)
+    bb.order(ByteOrder.BIG_ENDIAN)
+    bb.putLong(this.toLong())
     return bb.array()
 }
 

@@ -3,7 +3,7 @@ package tech.act.coinkits.ripple.model.transaction
 enum class XRPEnums(val value: ByteArray) {
     TransactionType     (byteArrayOf(0x12.toByte())),
     Flags               (byteArrayOf(0x22.toByte())),
-    Sequence            (byteArrayOf(0x12.toByte())),
+    Sequence            (byteArrayOf(0x24.toByte())),
     ReserveIncrement    (byteArrayOf(0x20.toByte())),
     LastLedgerSequence  (byteArrayOf(0x1B.toByte())),
     Amount              (byteArrayOf(0x61.toByte())),

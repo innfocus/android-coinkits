@@ -41,10 +41,20 @@ class ACTAddress {
                     return CarAddress(pub, publicKey!!.chainCode).raw()
                 }
             }
-        }else if (((addressStr != null) and (network != null))) {
-            when(publicKey!!.network.coin) {
-                ACTCoin.Bitcoin -> {
-                    return  null
+        }else if (addressStr != null) {
+            when(network.coin) {
+                ACTCoin.Bitcoin,
+                ACTCoin.Ripple -> {
+                    val type = if (network.coin == ACTCoin.Ripple) Base58.Base58Type.Ripple else Base58.Base58Type.Basic
+                    val r               = Base58.decode(addressStr!!, type) ?: return null
+                    val checksum        = r.suffix(4)
+                    val pubKeyHash      = r.dropLast(4).toByteArray()
+                    val checksumConfirm = ACTCryto.doubleSHA256(pubKeyHash).prefix(4)
+                    if (checksum.toHexString() == checksumConfirm.toHexString()) {
+                        return pubKeyHash
+                    }else{
+                        return null
+                    }
                 }
                 ACTCoin.Ethereum -> {
                     return addressStr!!.substring(network!!.addressPrefix().length).fromHexToByteArray()
@@ -53,7 +63,6 @@ class ACTAddress {
                     return CarAddress(addressStr = addressStr).raw()
                 }
             }
-
         }
         return null
     }

@@ -35,8 +35,10 @@ class XRPTransactionRaw {
 //    }
 
     fun serializer(hashPrefix: XRPHashPrefix? = null): ByteArray? {
-        val acc = ACTAddress(account, ACTNetwork(ACTCoin.Ripple, false)).raw() ?: return null
-        val des = ACTAddress(account, ACTNetwork(ACTCoin.Ripple, false)).raw() ?: return null
+        var acc = ACTAddress(account, ACTNetwork(ACTCoin.Ripple, false)).raw()      ?: return null
+        var des = ACTAddress(destination, ACTNetwork(ACTCoin.Ripple, false)).raw()  ?: return null
+        acc     = acc.dropFirst()
+        des     = des.dropFirst()
         var data    = byteArrayOf()
         // Prefix
         if (hashPrefix != null) {
