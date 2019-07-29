@@ -19,6 +19,7 @@ interface EstimateFeeHandle     { fun completionHandler(estimateFee: Double, err
 interface ICoinsManager {
     fun getHDWallet     (): ACTHDWallet?
     fun setNetworks     (networks: Array<ACTNetwork>)
+    fun currentNetwork  (coin: ACTCoin) : ACTNetwork?
     fun cleanAll        ()
     fun firstAddress    (coin: ACTCoin): ACTAddress?
     fun addresses       (coin: ACTCoin): Array<ACTAddress>?
@@ -81,6 +82,10 @@ class CoinsManager: ICoinsManager {
             coinsSupported.add(coin)
             networkManager[coin.symbolName()] = it
         }
+    }
+
+    override fun currentNetwork(coin: ACTCoin): ACTNetwork? {
+        return networkManager[coin.symbolName()]
     }
 
     override fun cleanAll() {

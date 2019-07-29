@@ -75,7 +75,7 @@ enum class ACTCoin {
     abstract fun supportMemo()      : Boolean
 }
 
-class ACTNetwork constructor(val coin: ACTCoin, private val isTestNet: Boolean) {
+class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {
 
     fun coinType(): Int {
         return when(coin) {

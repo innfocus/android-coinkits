@@ -29,7 +29,6 @@ class YOROIAPI {
         const val history           = "txs/history"
         const val signed            = "txs/signed"
         const val addressUsed       = "addresses/filterUsed"
-        const val transationPending = "txs/pending"
     }
 }
 
