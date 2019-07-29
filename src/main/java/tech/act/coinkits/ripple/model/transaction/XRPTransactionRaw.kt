@@ -23,16 +23,16 @@ class XRPTransactionRaw {
         return ser.sha512().prefix(32).toHexString()
     }
 
-//    data class Result(val txBlob: ByteArray, val transactionID: String)
-//    fun sign(privateKey: ACTPrivateKey): Result? {
-//        signingPubKey   = privateKey.publicKey().raw
-//        val ser         = serializer(XRPHashPrefix.TxSign) ?: return null
-//        var hash                = ser.sha512().prefix(32)
-//        txnSignature            = privateKey.signSerializeDER(hash: hash)
-//        guard let txBlob        = serializer() else {return nil}
-//        guard let tranID        = transactionID() else {return nil}
-//        return (txBlob          : txBlob, transactionID   : tranID)
-//    }
+    data class Result(val txBlob: ByteArray, val transactionID: String)
+    fun sign(privateKey: ACTPrivateKey): Result? {
+        signingPubKey   = privateKey.publicKey().raw
+        val ser         = serializer(XRPHashPrefix.TxSign) ?: return null
+        val hash        = ser.sha512().prefix(32)
+        txnSignature    = privateKey.signSerializeDER(hash)
+        val txBlob      = serializer()      ?: return null
+        val tranID      = transactionID()   ?: return null
+        return Result(txBlob, tranID)
+    }
 
     fun serializer(hashPrefix: XRPHashPrefix? = null): ByteArray? {
         var acc = ACTAddress(account, ACTNetwork(ACTCoin.Ripple, false)).raw()      ?: return null

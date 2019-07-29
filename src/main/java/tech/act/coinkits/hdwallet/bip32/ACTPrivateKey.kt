@@ -47,6 +47,11 @@ class ACTPrivateKey(): ACTKey(ACTTypeKey.PrivateKey) {
         return  ACTPublicKey(this, chainCode, network, depth, fingerprint, childIndex)
     }
 
+    fun signSerializeDER(hash: ByteArray): ByteArray? {
+        val r = raw ?: return null
+        return ACTCryto.signSerializeDER(hash, r)
+    }
+
     @Throws(ACTBIP32Exception::class)
     fun derived(node: ACTDerivationNode): ACTPrivateKey {
         val edge = (0x80000000).toInt()
