@@ -26,6 +26,7 @@ enum class ACTCoin {
         override fun baseApiUrl()       : String{
                 return  "https://blockchain.info"
         }
+        override fun allowNewAddress()  = true
     },
     Ethereum{
         override fun feeDefault()       = 0.0
@@ -38,6 +39,7 @@ enum class ACTCoin {
         override fun regex()            = "(?:((0x|0X|)[a-fA-F0-9]{40,}))"
         override fun algorithm()        = Algorithm.Secp256k1
         override fun baseApiUrl()       = ""
+        override fun allowNewAddress()  = false
     },
     Cardano{
         override fun feeDefault()       = 0.0
@@ -50,6 +52,7 @@ enum class ACTCoin {
         override fun regex()            = "(?:([a-km-zA-HJ-NP-Z1-9]{25,}))"
         override fun algorithm()        = Algorithm.Ed25519
         override fun baseApiUrl()       = ""
+        override fun allowNewAddress()  = true
     },
     Ripple{
         override fun feeDefault()       = 0.000012
@@ -62,6 +65,7 @@ enum class ACTCoin {
         override fun regex()            = "(?:([a-km-zA-HJ-NP-Z1-9]{26,35}))"
         override fun algorithm()        = Algorithm.Secp256k1
         override fun baseApiUrl()       = ""
+        override fun allowNewAddress()  = false
     };
     abstract fun nameCoin()         : String
     abstract fun symbolName()       : String
@@ -73,6 +77,7 @@ enum class ACTCoin {
     abstract fun feeDefault()       : Double
     abstract fun minimumAmount()    : Double
     abstract fun supportMemo()      : Boolean
+    abstract fun allowNewAddress()  : Boolean
 }
 
 class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {

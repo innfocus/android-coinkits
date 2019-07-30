@@ -7,6 +7,9 @@ import tech.act.coinkits.cardano.helpers.ADACoin
 import tech.act.coinkits.cardano.networking.models.ADATransaction
 import tech.act.coinkits.cardano.networking.models.ADATransactionInOut
 import tech.act.coinkits.hdwallet.bip32.ACTCoin
+import tech.act.coinkits.hdwallet.core.helpers.toDate
+import tech.act.coinkits.ripple.model.XRPCoin
+import tech.act.coinkits.ripple.model.XRPTransactionItem
 import java.io.Serializable
 import java.util.*
 
@@ -85,6 +88,27 @@ fun ADATransaction.toTransactionData(addresses: Array<String>): TransationData {
     result.coin         = ACTCoin.Cardano
     result.isSend       = addresses.filter { result.fromAddress.contains(it, ignoreCase = true)}.isNotEmpty()
     return result
+}
+
+/*
+* For Ripple
+ */
+
+fun Array<XRPTransactionItem>.toTransactionDatas(address: String): Array<TransationData> {
+    return map { it.toTransactionData(address) }.sortedByDescending { it.date }.toTypedArray()
+}
+
+fun XRPTransactionItem.toTransactionData(address: String): TransationData {
+    val tran            = TransationData()
+    tran.amount         = tx!!.amount / XRPCoin
+    tran.fee            = tx!!.fee / XRPCoin
+    tran.iD             = hash
+    tran.fromAddress    = tx!!.account
+    tran.toAddress      = tx!!.destination
+    tran.date           = date.toDate("yyyy-MM-dd'T'HH:mm:ssZ")
+    tran.coin           = ACTCoin.Ripple
+    tran.isSend         = tran.fromAddress.toLowerCase() == address.toLowerCase()
+    return tran
 }
 
 /* END */

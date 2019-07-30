@@ -11,6 +11,7 @@ import retrofit2.http.Url
 import tech.act.coinkits.CoinsManager
 import tech.act.coinkits.hdwallet.bip32.ACTCoin
 import tech.act.coinkits.ripple.model.XRPBalance
+import tech.act.coinkits.ripple.model.XRPTransaction
 
 class XRPAPI {
     companion object {
@@ -39,7 +40,8 @@ private interface IGxrp {
     }
 }
 
-interface XRPBalanceHandle  {fun completionHandler(balance: Float, err: Throwable?)}
+interface XRPBalanceHandle      {   fun completionHandler(balance: Float, err: Throwable?)}
+interface XRPTransactionsHandle {   fun completionHandler(transactions:XRPTransaction?, err: Throwable?)}
 
 class Gxrp {
     companion object {
@@ -79,6 +81,30 @@ class Gxrp {
 
             override fun onFailure(call: Call<JsonElement>, t: Throwable) {
                 completionHandler.completionHandler(0.0f, t)
+            }
+        })
+    }
+
+    fun getTransactions(address          : String,
+                        market           : String,
+                        completionHandler: XRPTransactionsHandle) {
+        var url = XRPAPI.transactions.replace("xxx", address)
+        if (market.isNotEmpty()) {
+            url +=  "&marker=" + market
+        }
+        val call = getService().transactions(url)
+        call.enqueue(object : Callback<JsonElement> {
+            override fun onResponse(call: Call<JsonElement>, response: Response<JsonElement>) {
+                val body = response.body()
+                if (body!!.isJsonObject) {
+                    completionHandler.completionHandler(XRPTransaction.parser(body!!.asJsonObject), null)
+                }else{
+                    completionHandler.completionHandler(null, null)
+                }
+            }
+
+            override fun onFailure(call: Call<JsonElement>, t: Throwable) {
+                completionHandler.completionHandler(null, t)
             }
         })
     }
