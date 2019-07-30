@@ -59,7 +59,7 @@ class CoinsManager: ICoinsManager {
     private var networkManager      = mutableMapOf( ACTCoin.Bitcoin.symbolName()    to ACTNetwork(ACTCoin.Bitcoin   , true),
                                                     ACTCoin.Ethereum.symbolName()   to ACTNetwork(ACTCoin.Ethereum  , true),
                                                     ACTCoin.Cardano.symbolName()    to ACTNetwork(ACTCoin.Cardano   , false),
-                                                    ACTCoin.Ripple.symbolName()    to ACTNetwork(ACTCoin.Cardano   , true))
+                                                    ACTCoin.Ripple.symbolName()    to ACTNetwork(ACTCoin.Ripple   , true))
             var mnemonicRecover     = ""
             var mnemonic            = ""
 
