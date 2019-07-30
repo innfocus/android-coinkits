@@ -12,6 +12,7 @@ import tech.act.coinkits.CoinsManager
 import tech.act.coinkits.hdwallet.bip32.ACTCoin
 import tech.act.coinkits.ripple.model.XRPBalance
 import tech.act.coinkits.ripple.model.XRPTransaction
+import java.math.BigDecimal
 
 class XRPAPI {
     companion object {
@@ -19,7 +20,7 @@ class XRPAPI {
         const val serverTest    = "https://testnet.data.api.ripple.com/v2/"
         const val balance       = "accounts/xxx/balances?currency=XRP"
         const val transactions  = "accounts/xxx/transactions?limit=20&descending=true"
-        const val XRP_TO_DROP   = 1000000
+        val XRP_TO_DROP   = BigDecimal(1000000)
     }
 }
 

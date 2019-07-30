@@ -7,7 +7,7 @@ import com.google.gson.annotations.SerializedName
 
 class XRPTransaction (
     @SerializedName("marker")
-    val marker                  : String   = "",
+    val marker                  : String?   = "",
     @SerializedName("count")
     val count                   : Int   = 0,
     @SerializedName("result")

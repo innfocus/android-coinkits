@@ -18,9 +18,10 @@ import tech.act.coinkits.ripple.networking.Gxrp
 import tech.act.coinkits.ripple.networking.XRPAPI
 import tech.act.coinkits.ripple.networking.XRPBalanceHandle
 import tech.act.coinkits.ripple.networking.XRPTransactionsHandle
+import java.math.BigDecimal
 
-interface BalanceHandle         { fun completionHandler(balance: Float, success: Boolean)}
-interface TransactionsHandle    { fun completionHandler(transations:Array<TransationData>?, moreParam: String, errStr: String)}
+interface BalanceHandle         { fun completionHandler(balance: BigDecimal, success: Boolean)}
+interface TransactionsHandle    { fun completionHandler(transactions:Array<TransationData>?, moreParam: String, errStr: String)}
 interface SendCoinHandle        { fun completionHandler(transID: String, success: Boolean, errStr: String)}
 interface EstimateFeeHandle     { fun completionHandler(estimateFee: Double, errStr: String)}
 
@@ -155,7 +156,7 @@ class CoinsManager: ICoinsManager {
                 }
             }
         }else{
-            completionHandler.completionHandler(0.0f, false)
+            completionHandler.completionHandler(BigDecimal.ZERO, false)
         }
     }
 
@@ -319,19 +320,19 @@ class CoinsManager: ICoinsManager {
             Gbtc.shared.getBalance(adds.toTypedArray(), object : BTCBalanceHandle {
                 override fun completionHandler(balance: Float, err: Throwable?) {
                     if ((err != null) or (balance < 0)) {
-                        completionHandler.completionHandler(0.0f, false)
+                        completionHandler.completionHandler(BigDecimal.ZERO, false)
                     } else {
-                        completionHandler.completionHandler(balance, true)
+                        completionHandler.completionHandler(balance.toBigDecimal(), true)
                     }
                 }
             })
         } else {
-            completionHandler.completionHandler(0.0f, false)
+            completionHandler.completionHandler(BigDecimal.ZERO, false)
         }
     }
 
     private fun getETHBalance(address: ACTAddress, completionHandler: BalanceHandle) {
-        completionHandler.completionHandler(0.0f, false)
+        completionHandler.completionHandler(BigDecimal.ZERO, false)
     }
 
     private fun getADABalance(addresses: Array<ACTAddress>, completionHandler: BalanceHandle) {
@@ -340,14 +341,14 @@ class CoinsManager: ICoinsManager {
             Gada.shared.getBalance(adds.toTypedArray(), object : ADABalanceHandle {
                 override fun completionHandler(balance: Float, err: Throwable?) {
                     if ((err != null) or (balance < 0)) {
-                        completionHandler.completionHandler(0.0f, false)
+                        completionHandler.completionHandler(BigDecimal.ZERO, false)
                     } else {
-                        completionHandler.completionHandler(balance, true)
+                        completionHandler.completionHandler(balance.toBigDecimal(), true)
                     }
                 }
             })
         } else {
-            completionHandler.completionHandler(0.0f, false)
+            completionHandler.completionHandler(BigDecimal.ZERO, false)
         }
     }
 
@@ -356,9 +357,9 @@ class CoinsManager: ICoinsManager {
         Gxrp.shared.getBalance(addString, object : XRPBalanceHandle {
             override fun completionHandler(balance: Float, err: Throwable?) {
                 if ((err != null) or (balance < 0)) {
-                    completionHandler.completionHandler(0.0f, false)
+                    completionHandler.completionHandler(BigDecimal.ZERO, false)
                 } else {
-                    val result  = balance * XRPAPI.XRP_TO_DROP
+                    val result  = balance.toBigDecimal().multiply(XRPAPI.XRP_TO_DROP)
                     completionHandler.completionHandler(result, true)
                 }
             }
@@ -384,24 +385,25 @@ class CoinsManager: ICoinsManager {
     }
 
     private fun getADATransactions(addresses: Array<ACTAddress>, completionHandler: TransactionsHandle) {
-        val adds = addresses.map { it.rawAddressString()}
+        val adds = addresses.map { it.rawAddressString() }
         if (adds.isNotEmpty()) {
             Gada.shared.addressUsed(adds.toTypedArray(), completionHandler = object : ADAAddressUsedHandle {
                 override fun completionHandler(addressUsed: Array<String>, err: Throwable?) {
                     Gada.shared.transactions(addressUsed,
-                                            ignoreAddsUsed      = true,
-                                            completionHandler   = object:ADATransactionsHandle {
-                        override fun completionHandler(transactions: Array<ADATransaction>?, err: Throwable?) {
-                            if (transactions != null) {
-                                completionHandler.completionHandler(transactions.toTransactionDatas(addressUsed), "", "")
-                            }else{
-                                completionHandler.completionHandler(null, "", err?.localizedMessage ?: "Error")
-                            }
-                        }
-                    })
+                            ignoreAddsUsed = true,
+                            completionHandler = object : ADATransactionsHandle {
+                                override fun completionHandler(transactions: Array<ADATransaction>?, err: Throwable?) {
+                                    if (transactions != null) {
+                                        completionHandler.completionHandler(transactions.toTransactionDatas(addressUsed), "", "")
+                                    } else {
+                                        completionHandler.completionHandler(null, "", err?.localizedMessage
+                                                ?: "Error")
+                                    }
+                                }
+                            })
                 }
             })
-        }else{
+        } else {
             completionHandler.completionHandler(null, "", "Error")
         }
     }
@@ -411,8 +413,12 @@ class CoinsManager: ICoinsManager {
             override fun completionHandler(transactions: XRPTransaction?, err: Throwable?) {
                 if (transactions != null && transactions.transactions != null) {
                     val trans = transactions.transactions!!.toTransactionDatas(address.rawAddressString())
-                    completionHandler.completionHandler(trans, transactions.marker, "")
-                }else{
+                    if (transactions.marker == null) {
+                        completionHandler.completionHandler(trans, "", "")
+                    } else {
+                        completionHandler.completionHandler(trans, transactions.marker, "")
+                    }
+                } else {
                     completionHandler.completionHandler(null, "", err?.localizedMessage ?: "Error")
                 }
             }
