@@ -6,9 +6,13 @@ import tech.act.coinkits.bitcoin.networking.BTCTransactionsHandle
 import tech.act.coinkits.bitcoin.networking.Gbtc
 import tech.act.coinkits.cardano.networking.*
 import tech.act.coinkits.cardano.networking.models.ADATransaction
-import tech.act.coinkits.hdwallet.bip32.*
-import tech.act.coinkits.hdwallet.bip39.*
-import tech.act.coinkits.hdwallet.bip44.*
+import tech.act.coinkits.hdwallet.bip32.ACTCoin
+import tech.act.coinkits.hdwallet.bip32.ACTNetwork
+import tech.act.coinkits.hdwallet.bip32.ACTPrivateKey
+import tech.act.coinkits.hdwallet.bip32.Change
+import tech.act.coinkits.hdwallet.bip39.ACTBIP39Exception
+import tech.act.coinkits.hdwallet.bip44.ACTAddress
+import tech.act.coinkits.hdwallet.bip44.ACTHDWallet
 import tech.act.coinkits.ripple.model.XRPTransaction
 import tech.act.coinkits.ripple.networking.Gxrp
 import tech.act.coinkits.ripple.networking.XRPBalanceHandle
@@ -51,10 +55,11 @@ class CoinsManager: ICoinsManager {
     private var prvKeysManager      = mutableMapOf<String, Array<ACTPrivateKey>>()
     private var extendPrvKeysNumber = mutableMapOf<String, Int>()
     private var addressesManager    = mutableMapOf<String, Array<ACTAddress>>()
-    private var coinsSupported      = arrayListOf(ACTCoin.Bitcoin, ACTCoin.Ethereum, ACTCoin.Cardano)
+    private var coinsSupported      = arrayListOf(ACTCoin.Bitcoin, ACTCoin.Ethereum, ACTCoin.Cardano, ACTCoin.Ripple)
     private var networkManager      = mutableMapOf( ACTCoin.Bitcoin.symbolName()    to ACTNetwork(ACTCoin.Bitcoin   , true),
                                                     ACTCoin.Ethereum.symbolName()   to ACTNetwork(ACTCoin.Ethereum  , true),
-                                                    ACTCoin.Cardano.symbolName()    to ACTNetwork(ACTCoin.Cardano   , false))
+                                                    ACTCoin.Cardano.symbolName()    to ACTNetwork(ACTCoin.Cardano   , false),
+                                                    ACTCoin.Ripple.symbolName()    to ACTNetwork(ACTCoin.Cardano   , true))
             var mnemonicRecover     = ""
             var mnemonic            = ""
 
@@ -102,9 +107,9 @@ class CoinsManager: ICoinsManager {
 
     override fun firstAddress(coin: ACTCoin): ACTAddress? {
         val adds = addresses(coin)
-        return if ((adds != null) && adds!!.isNotEmpty()) {
+        return if ((adds != null) && adds.isNotEmpty()) {
             adds.first()
-        }else{
+        } else {
             null
         }
     }
@@ -133,7 +138,7 @@ class CoinsManager: ICoinsManager {
 
     override fun getBalance(coin: ACTCoin, completionHandler: BalanceHandle) {
         val adds = addresses(coin)
-        if ((adds != null) && adds!!.isNotEmpty()) {
+        if ((adds != null) && adds.isNotEmpty()) {
             when(coin) {
                 ACTCoin.Bitcoin -> {
                     getBTCBalance(adds, completionHandler)
@@ -308,18 +313,18 @@ class CoinsManager: ICoinsManager {
     }
 
     private fun getBTCBalance(addresses: Array<ACTAddress>, completionHandler: BalanceHandle) {
-        val adds = addresses.map { it.rawAddressString()}
+        val adds = addresses.map { it.rawAddressString() }
         if (adds.isNotEmpty()) {
-            Gbtc.shared.getBalance(adds.toTypedArray(), object:BTCBalanceHandle {
+            Gbtc.shared.getBalance(adds.toTypedArray(), object : BTCBalanceHandle {
                 override fun completionHandler(balance: Float, err: Throwable?) {
                     if ((err != null) or (balance < 0)) {
                         completionHandler.completionHandler(0.0f, false)
-                    }else{
+                    } else {
                         completionHandler.completionHandler(balance, true)
                     }
                 }
             })
-        }else {
+        } else {
             completionHandler.completionHandler(0.0f, false)
         }
     }
@@ -329,29 +334,29 @@ class CoinsManager: ICoinsManager {
     }
 
     private fun getADABalance(addresses: Array<ACTAddress>, completionHandler: BalanceHandle) {
-        val adds = addresses.map { it.rawAddressString()}
+        val adds = addresses.map { it.rawAddressString() }
         if (adds.isNotEmpty()) {
-            Gada.shared.getBalance(adds.toTypedArray(), object:ADABalanceHandle {
+            Gada.shared.getBalance(adds.toTypedArray(), object : ADABalanceHandle {
                 override fun completionHandler(balance: Float, err: Throwable?) {
                     if ((err != null) or (balance < 0)) {
                         completionHandler.completionHandler(0.0f, false)
-                    }else{
+                    } else {
                         completionHandler.completionHandler(balance, true)
                     }
                 }
             })
-        }else{
+        } else {
             completionHandler.completionHandler(0.0f, false)
         }
     }
 
     private fun getXRPBalance(address: ACTAddress, completionHandler: BalanceHandle) {
         val addString = address.rawAddressString()
-        Gxrp.shared.getBalance(addString, object:XRPBalanceHandle {
+        Gxrp.shared.getBalance(addString, object : XRPBalanceHandle {
             override fun completionHandler(balance: Float, err: Throwable?) {
                 if ((err != null) or (balance < 0)) {
                     completionHandler.completionHandler(0.0f, false)
-                }else{
+                } else {
                     completionHandler.completionHandler(balance, true)
                 }
             }
@@ -359,14 +364,15 @@ class CoinsManager: ICoinsManager {
     }
 
     private fun getBTCTransactions(addresses: Array<ACTAddress>, completionHandler: TransactionsHandle) {
-        val adds = addresses.map { it.rawAddressString()}
+        val adds = addresses.map { it.rawAddressString() }
         if (adds.isNotEmpty()) {
             Gbtc.shared.transactions(adds.toTypedArray(), object : BTCTransactionsHandle {
                 override fun completionHandler(transactions: Array<BTCTransactionData>, err: Throwable?) {
-                    completionHandler.completionHandler(transactions.toTransactionDatas(adds.toTypedArray()), "", err?.localizedMessage ?: "Error")
+                    completionHandler.completionHandler(transactions.toTransactionDatas(adds.toTypedArray()), "", err?.localizedMessage
+                            ?: "Error")
                 }
             })
-        }else{
+        } else {
             completionHandler.completionHandler(null, "", "Error")
         }
     }

@@ -65,15 +65,13 @@ class Gxrp {
         val call = getService().getBalance(url)
         call.enqueue(object: Callback<JsonElement> {
             override fun onResponse(call: Call<JsonElement>, response: Response<JsonElement>) {
-                val body = response.body()
-                if (body!!.isJsonObject) {
-                    val balancesJson = body!!.asJsonObject["balances"]
+                val body = response.body() ?: return completionHandler.completionHandler(-1.0f, null)
+                if (body.isJsonObject) {
+                    val balancesJson = body.asJsonObject["balances"]
                     if (balancesJson.isJsonArray) {
                         val balances = XRPBalance.parser(balancesJson.asJsonArray)
                         val onlyXRP = balances.filter { it.currency.toLowerCase() == ACTCoin.Ripple.symbolName().toLowerCase()}.first()
-                        if (onlyXRP != null) {
-                            return completionHandler.completionHandler(onlyXRP!!.value, null)
-                        }
+                        return completionHandler.completionHandler(onlyXRP.value, null)
                     }
                 }
                 completionHandler.completionHandler(-1.0f, null)
