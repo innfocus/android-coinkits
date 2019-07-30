@@ -15,6 +15,7 @@ import tech.act.coinkits.hdwallet.bip44.ACTAddress
 import tech.act.coinkits.hdwallet.bip44.ACTHDWallet
 import tech.act.coinkits.ripple.model.XRPTransaction
 import tech.act.coinkits.ripple.networking.Gxrp
+import tech.act.coinkits.ripple.networking.XRPAPI
 import tech.act.coinkits.ripple.networking.XRPBalanceHandle
 import tech.act.coinkits.ripple.networking.XRPTransactionsHandle
 
@@ -160,8 +161,8 @@ class CoinsManager: ICoinsManager {
 
     override fun getTransactions(coin: ACTCoin, moreParam: String, completionHandler: TransactionsHandle) {
         val adds = addresses(coin)
-        if ((adds != null) && adds!!.isNotEmpty()) {
-            when(coin) {
+        if ((adds != null) && adds.isNotEmpty()) {
+            when (coin) {
                 ACTCoin.Bitcoin -> {
                     getBTCTransactions(adds, completionHandler)
                 }
@@ -175,7 +176,7 @@ class CoinsManager: ICoinsManager {
                     getXRPTransactions(adds.first(), moreParam, completionHandler)
                 }
             }
-        }else{
+        } else {
             completionHandler.completionHandler(arrayOf(), "", "")
         }
     }
@@ -357,7 +358,8 @@ class CoinsManager: ICoinsManager {
                 if ((err != null) or (balance < 0)) {
                     completionHandler.completionHandler(0.0f, false)
                 } else {
-                    completionHandler.completionHandler(balance, true)
+                    val result  = balance * XRPAPI.XRP_TO_DROP
+                    completionHandler.completionHandler(result, true)
                 }
             }
         })
@@ -407,8 +409,8 @@ class CoinsManager: ICoinsManager {
     private fun getXRPTransactions(address: ACTAddress, moreParam: String, completionHandler: TransactionsHandle) {
         Gxrp.shared.getTransactions(address.rawAddressString(), moreParam, object : XRPTransactionsHandle {
             override fun completionHandler(transactions: XRPTransaction?, err: Throwable?) {
-                if (transactions != null && transactions!!.transactions != null) {
-                    val trans = transactions!!.transactions!!.toTransactionDatas(address.rawAddressString())
+                if (transactions != null && transactions.transactions != null) {
+                    val trans = transactions.transactions!!.toTransactionDatas(address.rawAddressString())
                     completionHandler.completionHandler(trans, transactions.marker, "")
                 }else{
                     completionHandler.completionHandler(null, "", err?.localizedMessage ?: "Error")

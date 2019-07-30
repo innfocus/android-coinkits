@@ -19,6 +19,7 @@ class XRPAPI {
         const val serverTest    = "https://testnet.data.api.ripple.com/v2/"
         const val balance       = "accounts/xxx/balances?currency=XRP"
         const val transactions  = "accounts/xxx/transactions?limit=20&descending=true"
+        const val XRP_TO_DROP   = 1000000
     }
 }
 
