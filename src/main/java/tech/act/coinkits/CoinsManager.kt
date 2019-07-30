@@ -10,6 +10,8 @@ import tech.act.coinkits.cardano.networking.models.ADATransaction
 import tech.act.coinkits.hdwallet.bip32.*
 import tech.act.coinkits.hdwallet.bip39.*
 import tech.act.coinkits.hdwallet.bip44.*
+import tech.act.coinkits.ripple.networking.Gxrp
+import tech.act.coinkits.ripple.networking.XRPBalanceHandle
 
 interface BalanceHandle         { fun completionHandler(balance: Float, success: Boolean)}
 interface TransactionsHandle    { fun completionHandler(transations:Array<TransationData>?, errStr: String)}
@@ -140,6 +142,9 @@ class CoinsManager: ICoinsManager {
                 }
                 ACTCoin.Cardano -> {
                     getADABalance(adds, completionHandler)
+                }
+                ACTCoin.Ripple -> {
+                    getXRPBalance(adds.first(), completionHandler)
                 }
             }
         }else{
@@ -334,6 +339,19 @@ class CoinsManager: ICoinsManager {
         }else{
             completionHandler.completionHandler(0.0f, false)
         }
+    }
+
+    private fun getXRPBalance(address: ACTAddress, completionHandler: BalanceHandle) {
+        val addString = address.rawAddressString()
+        Gxrp.shared.getBalance(addString, object:XRPBalanceHandle {
+            override fun completionHandler(balance: Float, err: Throwable?) {
+                if ((err != null) or (balance < 0)) {
+                    completionHandler.completionHandler(0.0f, false)
+                }else{
+                    completionHandler.completionHandler(balance, true)
+                }
+            }
+        })
     }
 
     private fun getBTCTransactions(addresses: Array<ACTAddress>, completionHandler: TransactionsHandle) {

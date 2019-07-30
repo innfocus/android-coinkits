@@ -10,6 +10,7 @@ import retrofit2.http.GET
 import retrofit2.http.Url
 import tech.act.coinkits.CoinsManager
 import tech.act.coinkits.hdwallet.bip32.ACTCoin
+import tech.act.coinkits.ripple.model.XRPBalance
 
 class XRPAPI {
     companion object {
@@ -63,11 +64,17 @@ class Gxrp {
         call.enqueue(object: Callback<JsonElement> {
             override fun onResponse(call: Call<JsonElement>, response: Response<JsonElement>) {
                 val body = response.body()
-                if ((body != null) && body!!.isJsonObject) {
-
-                }else{
-                    completionHandler.completionHandler(-1.0f, null)
+                if (body!!.isJsonObject) {
+                    val balancesJson = body!!.asJsonObject["balances"]
+                    if (balancesJson.isJsonArray) {
+                        val balances = XRPBalance.parser(balancesJson.asJsonArray)
+                        val onlyXRP = balances.filter { it.currency.toLowerCase() == ACTCoin.Ripple.symbolName().toLowerCase()}.first()
+                        if (onlyXRP != null) {
+                            return completionHandler.completionHandler(onlyXRP!!.value, null)
+                        }
+                    }
                 }
+                completionHandler.completionHandler(-1.0f, null)
             }
 
             override fun onFailure(call: Call<JsonElement>, t: Throwable) {
