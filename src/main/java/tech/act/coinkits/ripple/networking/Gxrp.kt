@@ -72,11 +72,15 @@ class Gxrp {
                     val balancesJson = body.asJsonObject["balances"]
                     if (balancesJson.isJsonArray) {
                         val balances = XRPBalance.parser(balancesJson.asJsonArray)
-                        if (!balances.isEmpty()) {
-                            val onlyXRP =
-                                balances.filter { it.currency.toLowerCase() == ACTCoin.Ripple.symbolName().toLowerCase() }
-                                    .first()
-                            return completionHandler.completionHandler(onlyXRP.value, null)
+                        if (balances.isNotEmpty()) {
+                            try {
+                                val onlyXRP =
+                                    balances.filter { it.currency.toLowerCase() == ACTCoin.Ripple.symbolName().toLowerCase() }.map { it.value }
+                                return completionHandler.completionHandler(onlyXRP.first(), null)
+                            }catch (e: NoSuchElementException){
+                                return completionHandler.completionHandler(-1.0f, null)
+                            }
+
                         }
                     }
                 }

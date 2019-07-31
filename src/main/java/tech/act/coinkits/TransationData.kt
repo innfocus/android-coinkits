@@ -7,6 +7,7 @@ import tech.act.coinkits.cardano.helpers.ADACoin
 import tech.act.coinkits.cardano.networking.models.ADATransaction
 import tech.act.coinkits.cardano.networking.models.ADATransactionInOut
 import tech.act.coinkits.hdwallet.bip32.ACTCoin
+import tech.act.coinkits.hdwallet.core.helpers.fromHexToByteArray
 import tech.act.coinkits.hdwallet.core.helpers.toDate
 import tech.act.coinkits.ripple.model.XRPCoin
 import tech.act.coinkits.ripple.model.XRPTransactionItem
@@ -22,6 +23,7 @@ class TransationData : Serializable {
     var date            : Date = Date()
     var coin            : ACTCoin = ACTCoin.Bitcoin
     var isSend          = false
+    var memoNetwork     : MemoData? = null
 }
 
 /*
@@ -108,6 +110,11 @@ fun XRPTransactionItem.toTransactionData(address: String): TransationData {
     tran.date           = date.toDate("yyyy-MM-dd'T'HH:mm:ssZ")
     tran.coin           = ACTCoin.Ripple
     tran.isSend         = tran.fromAddress.toLowerCase() == address.toLowerCase()
+    try {
+        val memo        = tx!!.memos.first()
+        val memoText    = memo.memoData.fromHexToByteArray().toString(Charsets.UTF_8)
+        tran.memoNetwork = MemoData(memoText, tx!!.destinationTag.toUInt())
+    }catch (e: NoSuchElementException){}
     return tran
 }
 

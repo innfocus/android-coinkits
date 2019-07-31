@@ -40,6 +40,7 @@ interface ICoinsManager {
                          amount            : Double,
                          networkFee        : Double,
                          serviceFee        : Double,
+                         networkMemo       : MemoData? = null,
                          completionHandler : SendCoinHandle)
 
     fun estimateFee      (serAddressStr     : String,
@@ -221,6 +222,7 @@ class CoinsManager: ICoinsManager {
                           amount            : Double,
                           networkFee        : Double,
                           serviceFee        : Double,
+                          networkMemo       : MemoData?,
                           completionHandler : SendCoinHandle) {
         when(fromAddress.network.coin) {
             ACTCoin.Bitcoin -> {
@@ -252,6 +254,9 @@ class CoinsManager: ICoinsManager {
                     networkFee,
                     serviceFee,
                     completionHandler)
+            }
+            ACTCoin.Ripple -> {
+
             }
         }
     }
@@ -411,7 +416,7 @@ class CoinsManager: ICoinsManager {
     private fun getXRPTransactions(address: ACTAddress, moreParam: String, completionHandler: TransactionsHandle) {
         Gxrp.shared.getTransactions(address.rawAddressString(), moreParam, object : XRPTransactionsHandle {
             override fun completionHandler(transactions: XRPTransaction?, err: Throwable?) {
-                if (transactions != null && transactions.transactions != null) {
+                if (transactions != null) {
                     val trans = transactions.transactions!!.toTransactionDatas(address.rawAddressString())
                     if (transactions.marker == null) {
                         completionHandler.completionHandler(trans, "", "")

@@ -63,8 +63,15 @@ class XRPTX(
     @SerializedName("Account")
     val account                     : String   = "",
     @SerializedName("Destination")
-    val destination                 : String   = ""
+    val destination                 : String   = "",
+    @SerializedName("DestinationTag")
+    val destinationTag              : String   = "",
+    @SerializedName("Memos")
+    private val _memos              : JsonElement
 ){
+    private var memosTmp   : Array<XRPMemo>?    = null
+    var memos   get()       = memosTmp ?: XRPMemo.parser(_memos)
+                set(value)  {memosTmp = value}
     companion object {
         fun parser(json: JsonElement): XRPTX? {
             return try {
@@ -72,6 +79,28 @@ class XRPTX(
             }catch (e: JsonSyntaxException) {
                 null
             }
+        }
+    }
+}
+
+class XRPMemo {
+    @SerializedName("MemoData")
+    val memoData : String   = ""
+    companion object {
+        fun parser(json: JsonElement): Array<XRPMemo> {
+            var rs = arrayOf<XRPMemo>()
+            try {
+                if (json.isJsonArray) {
+                    val memosJson = json.asJsonArray
+                    for (i in 0 until memosJson.count()) {
+                        val memoJson = memosJson[i].asJsonObject["Memo"]
+                        if (!memoJson.isJsonNull) {
+                            rs += Gson().fromJson(memoJson, XRPMemo::class.java)
+                        }
+                    }
+                }
+            }catch (e: JsonSyntaxException) {}
+            return rs
         }
     }
 }
