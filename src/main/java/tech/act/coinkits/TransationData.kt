@@ -111,9 +111,20 @@ fun XRPTransactionItem.toTransactionData(address: String): TransationData {
     tran.coin           = ACTCoin.Ripple
     tran.isSend         = tran.fromAddress.toLowerCase() == address.toLowerCase()
     try {
-        val memo        = tx!!.memos.first()
-        val memoText    = memo.memoData.fromHexToByteArray().toString(Charsets.UTF_8)
-        tran.memoNetwork = MemoData(memoText, tx!!.destinationTag.toUInt())
+        val memoNetwork = MemoData("", 0u)
+        if (!tx!!.memos.isNullOrEmpty()) {
+            val memo            = tx!!.memos.first()
+            memoNetwork.memo    = memo.memoData.fromHexToByteArray().toString(Charsets.UTF_8)
+        }
+
+        if (!tx!!.destinationTag.isNullOrEmpty()) {
+            memoNetwork.destinationTag = tx!!.destinationTag.toUIntOrNull() ?: 0u
+        }
+
+        if (memoNetwork.memo.isNotEmpty() || memoNetwork.destinationTag > 0u) {
+            tran.memoNetwork = memoNetwork
+        }
+
     }catch (e: NoSuchElementException){}
     return tran
 }

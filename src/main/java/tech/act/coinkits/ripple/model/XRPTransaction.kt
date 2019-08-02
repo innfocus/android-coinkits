@@ -87,7 +87,10 @@ class XRPMemo {
     @SerializedName("MemoData")
     val memoData : String   = ""
     companion object {
-        fun parser(json: JsonElement): Array<XRPMemo> {
+        fun parser(json: JsonElement?): Array<XRPMemo> {
+            if (json == null) {
+                return emptyArray()
+            }
             var rs = arrayOf<XRPMemo>()
             try {
                 if (json.isJsonArray) {
