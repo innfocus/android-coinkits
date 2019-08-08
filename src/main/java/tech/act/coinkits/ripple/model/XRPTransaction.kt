@@ -69,8 +69,8 @@ class XRPTX(
     @SerializedName("Memos")
     private val _memos              : JsonElement
 ){
-    private var memosTmp   : Array<XRPMemo>?    = null
-    var memos   get()       = memosTmp ?: XRPMemo.parser(_memos)
+    private var memosTmp   : Array<XRPMemoRes>?    = null
+    var memos   get()       = memosTmp ?: XRPMemoRes.parser(_memos)
                 set(value)  {memosTmp = value}
     companion object {
         fun parser(json: JsonElement): XRPTX? {
@@ -83,22 +83,22 @@ class XRPTX(
     }
 }
 
-class XRPMemo {
+class XRPMemoRes {
     @SerializedName("MemoData")
     val memoData : String   = ""
     companion object {
-        fun parser(json: JsonElement?): Array<XRPMemo> {
+        fun parser(json: JsonElement?): Array<XRPMemoRes> {
             if (json == null) {
                 return emptyArray()
             }
-            var rs = arrayOf<XRPMemo>()
+            var rs = arrayOf<XRPMemoRes>()
             try {
                 if (json.isJsonArray) {
                     val memosJson = json.asJsonArray
                     for (i in 0 until memosJson.count()) {
                         val memoJson = memosJson[i].asJsonObject["Memo"]
                         if (!memoJson.isJsonNull) {
-                            rs += Gson().fromJson(memoJson, XRPMemo::class.java)
+                            rs += Gson().fromJson(memoJson, XRPMemoRes::class.java)
                         }
                     }
                 }

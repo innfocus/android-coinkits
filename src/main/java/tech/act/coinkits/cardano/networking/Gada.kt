@@ -350,8 +350,8 @@ class Gada {
     }
 
     fun sendTxAux(signedTx          : String,
-                          txId              : String,
-                          completionHandler : ADASendTxAuxHandle) {
+                  txId              : String,
+                  completionHandler : ADASendTxAuxHandle) {
         val params = JsonObject()
         params.addProperty("signedTx", signedTx)
         val call = apiService.sendTxAux(params)

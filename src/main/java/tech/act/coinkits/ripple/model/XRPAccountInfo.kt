@@ -7,7 +7,7 @@ import com.google.gson.annotations.SerializedName
 
 class XRPAccountInfo(
     @SerializedName("ledger_index")
-    val ledgerIndex             : Float,
+    val ledgerIndex             : Int,
     @SerializedName("account_data")
     private val _accountData    : JsonElement){
 

@@ -14,9 +14,12 @@ import tech.act.coinkits.hdwallet.bip39.ACTBIP39Exception
 import tech.act.coinkits.hdwallet.bip44.ACTAddress
 import tech.act.coinkits.hdwallet.bip44.ACTHDWallet
 import tech.act.coinkits.ripple.model.XRPTransaction
+import tech.act.coinkits.ripple.model.transaction.XRPMemo
 import tech.act.coinkits.ripple.networking.Gxrp
 import tech.act.coinkits.ripple.networking.XRPBalanceHandle
+import tech.act.coinkits.ripple.networking.XRPSubmitTxtHandle
 import tech.act.coinkits.ripple.networking.XRPTransactionsHandle
+import kotlin.math.acos
 
 interface BalanceHandle         { fun completionHandler(balance: Float, success: Boolean)}
 interface TransactionsHandle    { fun completionHandler(transactions:Array<TransationData>?, moreParam: String, errStr: String)}
@@ -254,7 +257,15 @@ class CoinsManager: ICoinsManager {
                     completionHandler)
             }
             ACTCoin.Ripple -> {
-
+                sendXRPCoin(
+                    fromAddress,
+                    toAddressStr,
+                    serAddressStr,
+                    amount,
+                    networkFee,
+                    serviceFee,
+                    networkMemo,
+                    completionHandler)
             }
         }
     }
@@ -474,5 +485,23 @@ class CoinsManager: ICoinsManager {
         }else{
            completionHandler.completionHandler("", false, "")
         }
+    }
+
+    private fun sendXRPCoin(fromAddress       : ACTAddress,
+                            toAddressStr      : String,
+                            serAddressStr     : String,
+                            amount            : Double,
+                            networkFee        : Double,
+                            serviceFee        : Double,
+                            networkMemo       : MemoData?,
+                            completionHandler : SendCoinHandle){
+        val prvKeys = privateKeys(ACTCoin.Ripple) ?: return completionHandler.completionHandler("", false, "Not supported")
+        val priKey  = prvKeys.first()
+        val memo = if (networkMemo != null) XRPMemo(networkMemo!!.memo, networkMemo!!.destinationTag) else null
+        Gxrp.shared.sendCoin(priKey, fromAddress, toAddressStr, amount, memo , object : XRPSubmitTxtHandle {
+            override fun completionHandler(transID: String, success: Boolean, errStr: String) {
+                completionHandler.completionHandler(transID, success, errStr)
+            }
+        })
     }
 }
