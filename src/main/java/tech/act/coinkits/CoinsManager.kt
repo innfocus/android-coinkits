@@ -15,12 +15,10 @@ import tech.act.coinkits.hdwallet.bip44.ACTAddress
 import tech.act.coinkits.hdwallet.bip44.ACTHDWallet
 import tech.act.coinkits.ripple.model.XRPTransaction
 import tech.act.coinkits.ripple.networking.Gxrp
-import tech.act.coinkits.ripple.networking.XRPAPI
 import tech.act.coinkits.ripple.networking.XRPBalanceHandle
 import tech.act.coinkits.ripple.networking.XRPTransactionsHandle
-import java.math.BigDecimal
 
-interface BalanceHandle         { fun completionHandler(balance: BigDecimal, success: Boolean)}
+interface BalanceHandle         { fun completionHandler(balance: Float, success: Boolean)}
 interface TransactionsHandle    { fun completionHandler(transactions:Array<TransationData>?, moreParam: String, errStr: String)}
 interface SendCoinHandle        { fun completionHandler(transID: String, success: Boolean, errStr: String)}
 interface EstimateFeeHandle     { fun completionHandler(estimateFee: Double, errStr: String)}
@@ -157,7 +155,7 @@ class CoinsManager: ICoinsManager {
                 }
             }
         }else{
-            completionHandler.completionHandler(BigDecimal.ZERO, false)
+            completionHandler.completionHandler(0.0f, false)
         }
     }
 
@@ -325,19 +323,19 @@ class CoinsManager: ICoinsManager {
             Gbtc.shared.getBalance(adds.toTypedArray(), object : BTCBalanceHandle {
                 override fun completionHandler(balance: Float, err: Throwable?) {
                     if ((err != null) or (balance < 0)) {
-                        completionHandler.completionHandler(BigDecimal.ZERO, false)
+                        completionHandler.completionHandler(0.0f, false)
                     } else {
-                        completionHandler.completionHandler(balance.toBigDecimal(), true)
+                        completionHandler.completionHandler(balance, true)
                     }
                 }
             })
         } else {
-            completionHandler.completionHandler(BigDecimal.ZERO, false)
+            completionHandler.completionHandler(0.0f, false)
         }
     }
 
     private fun getETHBalance(address: ACTAddress, completionHandler: BalanceHandle) {
-        completionHandler.completionHandler(BigDecimal.ZERO, false)
+        completionHandler.completionHandler(0.0f, false)
     }
 
     private fun getADABalance(addresses: Array<ACTAddress>, completionHandler: BalanceHandle) {
@@ -346,14 +344,14 @@ class CoinsManager: ICoinsManager {
             Gada.shared.getBalance(adds.toTypedArray(), object : ADABalanceHandle {
                 override fun completionHandler(balance: Float, err: Throwable?) {
                     if ((err != null) or (balance < 0)) {
-                        completionHandler.completionHandler(BigDecimal.ZERO, false)
+                        completionHandler.completionHandler(0.0f, false)
                     } else {
-                        completionHandler.completionHandler(balance.toBigDecimal(), true)
+                        completionHandler.completionHandler(balance, true)
                     }
                 }
             })
         } else {
-            completionHandler.completionHandler(BigDecimal.ZERO, false)
+            completionHandler.completionHandler(0.0f, false)
         }
     }
 
@@ -362,10 +360,9 @@ class CoinsManager: ICoinsManager {
         Gxrp.shared.getBalance(addString, object : XRPBalanceHandle {
             override fun completionHandler(balance: Float, err: Throwable?) {
                 if ((err != null) or (balance < 0)) {
-                    completionHandler.completionHandler(BigDecimal.ZERO, false)
+                    completionHandler.completionHandler(0.0f, false)
                 } else {
-                    val result  = balance.toBigDecimal().multiply(XRPAPI.XRP_TO_DROP)
-                    completionHandler.completionHandler(result, true)
+                    completionHandler.completionHandler(balance, true)
                 }
             }
         })
