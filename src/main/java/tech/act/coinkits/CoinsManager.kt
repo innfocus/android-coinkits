@@ -13,6 +13,7 @@ import tech.act.coinkits.hdwallet.bip32.Change
 import tech.act.coinkits.hdwallet.bip39.ACTBIP39Exception
 import tech.act.coinkits.hdwallet.bip44.ACTAddress
 import tech.act.coinkits.hdwallet.bip44.ACTHDWallet
+import tech.act.coinkits.hdwallet.bip44.isAddress
 import tech.act.coinkits.ripple.model.XRPTransaction
 import tech.act.coinkits.ripple.model.transaction.XRPMemo
 import tech.act.coinkits.ripple.networking.Gxrp
@@ -192,7 +193,11 @@ class CoinsManager: ICoinsManager {
     {
         when(network.coin) {
             ACTCoin.Bitcoin     -> {completionHandler.completionHandler(0.0, "TO DO")   }
-            ACTCoin.Ethereum    -> { completionHandler.completionHandler(0.0, "TO DO")  }
+            ACTCoin.Ethereum    -> {completionHandler.completionHandler(0.0, "TO DO")  }
+            ACTCoin.Ripple      -> {
+                val hasSerFee =  serAddressStr.isAddress(ACTCoin.Ripple)
+                completionHandler.completionHandler(ACTCoin.Ripple.feeDefault() * (if (hasSerFee) 2 else 1), "")
+            }
             ACTCoin.Cardano     -> {
                 val prvKeys     = privateKeys(ACTCoin.Cardano)  ?: arrayOf()
                 val addresses   = addresses(ACTCoin.Cardano)    ?: arrayOf()
@@ -262,9 +267,9 @@ class CoinsManager: ICoinsManager {
                     toAddressStr,
                     serAddressStr,
                     amount,
-                    networkFee,
                     serviceFee,
                     networkMemo,
+                    null,
                     completionHandler)
             }
         }
@@ -487,20 +492,27 @@ class CoinsManager: ICoinsManager {
         }
     }
 
-    private fun sendXRPCoin(fromAddress       : ACTAddress,
-                            toAddressStr      : String,
-                            serAddressStr     : String,
-                            amount            : Double,
-                            networkFee        : Double,
-                            serviceFee        : Double,
-                            networkMemo       : MemoData?,
-                            completionHandler : SendCoinHandle){
+    private fun sendXRPCoin(fromAddress         : ACTAddress,
+                            toAddressStr        : String,
+                            serAddressStr       : String,
+                            amount              : Double,
+                            serviceFee          : Double,
+                            networkMemo         : MemoData?,
+                            sequence            : Int? = null,
+                            completionHandler   : SendCoinHandle){
         val prvKeys = privateKeys(ACTCoin.Ripple) ?: return completionHandler.completionHandler("", false, "Not supported")
         val priKey  = prvKeys.first()
         val memo = if (networkMemo != null) XRPMemo(networkMemo!!.memo, networkMemo!!.destinationTag) else null
-        Gxrp.shared.sendCoin(priKey, fromAddress, toAddressStr, amount, memo , object : XRPSubmitTxtHandle {
-            override fun completionHandler(transID: String, success: Boolean, errStr: String) {
+        Gxrp.shared.sendCoin(priKey, fromAddress, toAddressStr, amount, memo, sequence, object : XRPSubmitTxtHandle {
+            override fun completionHandler(transID: String, sequence: Int?, success: Boolean, errStr: String) {
                 completionHandler.completionHandler(transID, success, errStr)
+                /* Check to send service fee */
+                if (success && serAddressStr.isAddress(ACTCoin.Ripple) && serviceFee > 0) {
+                    sendXRPCoin(fromAddress, serAddressStr, "", serviceFee, 0.0, null, (sequence!! + 1), object : SendCoinHandle
+                    {
+                        override fun completionHandler(transID: String, success: Boolean, errStr: String) {}
+                    })
+                }
             }
         })
     }

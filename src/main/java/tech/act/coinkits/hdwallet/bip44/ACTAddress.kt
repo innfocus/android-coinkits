@@ -93,3 +93,7 @@ class ACTAddress {
         }
     }
 }
+
+fun String.isAddress(coin: ACTCoin): Boolean {
+    return ACTAddress(this, ACTNetwork(coin, false)).raw() != null
+}

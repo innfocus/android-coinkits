@@ -45,7 +45,7 @@ private interface IGxrp {
 
 interface XRPBalanceHandle      {   fun completionHandler(balance: Float, err: Throwable?)}
 interface XRPTransactionsHandle {   fun completionHandler(transactions:XRPTransaction?, err: Throwable?)}
-interface XRPSubmitTxtHandle    {   fun completionHandler(transID: String, success: Boolean, errStr: String)}
+interface XRPSubmitTxtHandle    {   fun completionHandler(transID: String, sequence: Int?, success: Boolean, errStr: String)}
 
 class Gxrp {
     companion object {
@@ -123,28 +123,29 @@ class Gxrp {
                  address            : ACTAddress,
                  toAddressStr       : String,
                  amount             : Double,
-                 memo               : XRPMemo? = null,
+                 memo               : XRPMemo?  = null,
+                 sequence           : Int?      = null,
                  completionHandler  : XRPSubmitTxtHandle) {
         val nw      = prvKey.network
         val account = address.rawAddressString()
         val jsonRPC = XRPJsonRPC(nw.isTestNet)
         jsonRPC.getAccountInfo(account, object : XRPAccountInfoHandle {
             override fun completionHandler(accInfo: XRPAccountInfo?, err: Throwable?) {
-                val acc = accInfo ?: return completionHandler.completionHandler("", false, err?.localizedMessage ?: "")
+                val acc = accInfo ?: return completionHandler.completionHandler("", null, false, err?.localizedMessage ?: "")
                 val tranRaw             = XRPTransactionRaw()
                 tranRaw.account         = account
                 tranRaw.destination     = toAddressStr
-                tranRaw.sequence        = acc.accountData.sequence
+                tranRaw.sequence        = sequence ?: acc.accountData.sequence
                 /* Expire this transaction if it doesn't execute within ~5 minutes: "maxLedgerVersionOffset": 75 */
                 tranRaw.lastLedgerSeq   = acc.ledgerIndex + 75
                 tranRaw.amount          = amount * XRPCoin
                 tranRaw.fee             = nw.coin.feeDefault() * XRPCoin
                 tranRaw.memo            = memo
-                val signed = tranRaw.sign(prvKey) ?: return completionHandler.completionHandler("", false, err?.localizedMessage ?: "")
+                val signed = tranRaw.sign(prvKey) ?: return completionHandler.completionHandler("", tranRaw.sequence, false, err?.localizedMessage ?: "")
                 jsonRPC.submit(signed.txBlob, object : XRPSubmitHandle {
                     override fun completionHandler(submitRes: XRPSubmitResponse?, err: Throwable?) {
-                        val res = submitRes ?: return completionHandler.completionHandler("", false, err?.localizedMessage ?: "")
-                        completionHandler.completionHandler(signed.transactionID, res.engineResultCode == 0, res.engineResultMessage)
+                        val res = submitRes ?: return completionHandler.completionHandler("", tranRaw.sequence, false, err?.localizedMessage ?: "")
+                        completionHandler.completionHandler(signed.transactionID, tranRaw.sequence, res.engineResultCode == 0, res.engineResultMessage)
                     }
                 })
             }
