@@ -1,10 +1,13 @@
 package tech.act.coinkits.ripple.networking
 
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import tech.act.coinkits.hdwallet.core.helpers.toHexString
 import tech.act.coinkits.ripple.model.XRPAccountInfo
 import tech.act.coinkits.ripple.model.XRPSubmitResponse
 import tech.act.coinkits.ripple.networking.jsonRPCSimple.ACTClient
 import tech.act.coinkits.ripple.networking.jsonRPCSimple.ACTJsonRPCRequest
+import tech.act.coinkits.ripple.networking.jsonRPCSimple.RPCJSONHandle
 
 private class XRPJsonRPCServer {
     companion object {
@@ -12,6 +15,9 @@ private class XRPJsonRPCServer {
         const val testnet  = "https://s.altnet.rippletest.net:51234"
     }
 }
+
+interface XRPAccountInfoHandle  {fun completionHandler(accInfo  : XRPAccountInfo?   , err: Throwable?)}
+interface XRPSubmitHandle       {fun completionHandler(submitRes: XRPSubmitResponse?, err: Throwable?)}
 
 class XRPJsonRPC{
 
@@ -22,26 +28,49 @@ class XRPJsonRPC{
         this.client         = ACTClient(nodeEndpoint)
     }
 
-    class GetAccountInfo (private val account       : String,
-                          private val strict        : Boolean,
-                          private val ledgerIndex   : String): ACTJsonRPCRequest<XRPAccountInfo> {
-        override var method: String = "account_info"
-        override var parameters: Any? = {
-            arrayOf(mutableMapOf("account" to account, "strict" to strict, "ledger_index" to ledgerIndex))
-        }
-
-        override fun response(resultObject: Any): XRPAccountInfo? {
-            return null
-        }
+    fun getAccountInfo(address              : String,
+                       completionHandler    : XRPAccountInfoHandle) {
+        val r = GetAccountInfo(address, true, "validated")
+        client.send(r, object : RPCJSONHandle<XRPAccountInfo> {
+            override fun completionHandler(response: XRPAccountInfo?, err: Throwable?) {
+                completionHandler.completionHandler(response, err)
+            }
+        })
     }
 
-    class Submit (private val txBlob: ByteArray): ACTJsonRPCRequest<XRPSubmitResponse> {
-        override var method: String = "submit"
-        override var parameters: Any? = {
-            arrayOf(mutableMapOf("tx_blob" to txBlob.toHexString()))
-        }
-        override fun response(resultObject: Any): XRPSubmitResponse? {
-            return null
-        }
+    fun submit(txBlob           : ByteArray,
+            completionHandler   : XRPSubmitHandle) {
+        val r = Submit(txBlob)
+        client.send(r, object : RPCJSONHandle<XRPSubmitResponse> {
+            override fun completionHandler(response: XRPSubmitResponse?, err: Throwable?) {
+                completionHandler.completionHandler(response, err)
+            }
+        })
+    }
+}
+
+private class GetAccountInfo: ACTJsonRPCRequest<XRPAccountInfo> {
+    override var method: String = "account_info"
+    override var parameters: JsonObject? = JsonObject()
+    constructor(account       : String,
+                strict        : Boolean,
+                ledgerIndex   : String) {
+        parameters!!.addProperty("account", account)
+        parameters!!.addProperty("strict", strict)
+        parameters!!.addProperty("ledger_index", ledgerIndex)
+    }
+    override fun response(resultObject: JsonElement): XRPAccountInfo? {
+        return XRPAccountInfo.parser(resultObject)
+    }
+}
+
+private class Submit: ACTJsonRPCRequest<XRPSubmitResponse> {
+    override var method     : String = "submit"
+    override var parameters : JsonObject? = JsonObject()
+    constructor(tx_blob: ByteArray) {
+        parameters!!.addProperty("tx_blob", tx_blob.toHexString())
+    }
+    override fun response(resultObject: JsonElement): XRPSubmitResponse? {
+        return XRPSubmitResponse.parser(resultObject)
     }
 }

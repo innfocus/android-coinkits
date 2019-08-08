@@ -83,7 +83,8 @@ class ACTCryto {
         fun signSerializeDER(sighash: ByteArray, privateKey: ByteArray): ByteArray? {
 
             val signer      = ECDSASigner(HMacDSAKCalculator(SHA256Digest()))
-            val priKey      = ECPrivateKeyParameters(BigInteger(privateKey), ecParams)
+            /* @Phat, Thank you for your supported!!! */
+            val priKey      = ECPrivateKeyParameters(BigInteger(1, privateKey), ecParams)
             signer.init(true, priKey)
             val sigs        = signer.generateSignature(sighash)
             val r           = sigs[0]
