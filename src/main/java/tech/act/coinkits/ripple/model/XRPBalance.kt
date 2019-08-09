@@ -11,7 +11,7 @@ class XRPBalance(
     val currency   : String   = "",
 
     @SerializedName("value")
-    val value   : Float = 0f ) {
+    val value   : Double = 0.0 ) {
 
     companion object {
         fun parser(json: JsonElement): Array<XRPBalance> {

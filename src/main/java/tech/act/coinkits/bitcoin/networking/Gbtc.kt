@@ -60,7 +60,7 @@ private interface IGbtc {
     }
 }
 
-interface BTCBalanceHandle                  { fun completionHandler(balance: Float, err: Throwable?)}
+interface BTCBalanceHandle                  { fun completionHandler(balance: Double, err: Throwable?)}
 interface BTCAddressUsedHandle              { fun completionHandler(addressUsed: Array<BTCBalanceSummary>, err: Throwable?)}
 interface BTCTransactionsHandle             { fun completionHandler(transactions: Array<BTCTransactionData>, err: Throwable?)}
 interface BTCUnspentOutputsHandle           { fun completionHandler(transactions: Array<BTCTransactionOutput>, err: Throwable?)}
@@ -99,7 +99,7 @@ class Gbtc {
             completionHandler =  object : BTCAddressUsedHandle {
             override fun completionHandler(addressUsed: Array<BTCBalanceSummary>, err: Throwable?) {
                 when(err != null) {
-                    true    -> completionHandler.completionHandler(0.0f, err)
+                    true    -> completionHandler.completionHandler(0.0, err)
                     false   -> {
                         val balance = addressUsed.filter{it.finalBalance > 0}.map { it.finalBalance / BTCCoin }.sum()
                         completionHandler.completionHandler(balance, null)

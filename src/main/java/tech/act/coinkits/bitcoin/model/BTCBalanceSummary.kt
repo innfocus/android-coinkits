@@ -7,11 +7,11 @@ import com.google.gson.annotations.SerializedName
 
 class BTCBalanceSummary(
     @SerializedName("final_balance")
-    var finalBalance: Float     = 0.0f,
+    var finalBalance: Double    = 0.0,
     @SerializedName("n_tx")
     var txNumber: Int           = 0,
     @SerializedName("total_received")
-    var totalReceived: Float    = 0.0f
+    var totalReceived: Double   = 0.0
 ) {
     var address: String = ""
 
