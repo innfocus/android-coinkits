@@ -150,7 +150,8 @@ class Gxrp {
                 jsonRPC.submit(signed.txBlob, object : XRPSubmitHandle {
                     override fun completionHandler(submitRes: XRPSubmitResponse?, err: Throwable?) {
                         val res = submitRes ?: return completionHandler.completionHandler("", tranRaw.sequence, false, err?.localizedMessage ?: "")
-                        completionHandler.completionHandler(signed.transactionID, tranRaw.sequence, res.engineResultCode == 0, res.engineResultMessage)
+                        val msg = res.engineResultMessage + "|" + res.engineResult + "|" + res.engineResultCode
+                        completionHandler.completionHandler(signed.transactionID, tranRaw.sequence, res.engineResultCode == 0, msg)
                     }
                 })
             }
