@@ -43,7 +43,7 @@ private interface IGxrp {
     }
 }
 
-interface XRPBalanceHandle      {   fun completionHandler(balance: Float, err: Throwable?)}
+interface XRPBalanceHandle      {   fun completionHandler(balance: Double, err: Throwable?)}
 interface XRPTransactionsHandle {   fun completionHandler(transactions:XRPTransaction?, err: Throwable?)}
 interface XRPSubmitTxtHandle    {   fun completionHandler(transID: String, sequence: Int?, success: Boolean, errStr: String)}
 
@@ -69,7 +69,7 @@ class Gxrp {
         val call = getService().getBalance(url)
         call.enqueue(object: Callback<JsonElement> {
             override fun onResponse(call: Call<JsonElement>, response: Response<JsonElement>) {
-                val body = response.body() ?: return completionHandler.completionHandler(-1.0f, null)
+                val body = response.body() ?: return completionHandler.completionHandler(-1.0, null)
                 if (body.isJsonObject) {
                     val balancesJson = body.asJsonObject["balances"]
                     if (balancesJson.isJsonArray) {
@@ -80,17 +80,17 @@ class Gxrp {
                                     balances.filter { it.currency.toLowerCase() == ACTCoin.Ripple.symbolName().toLowerCase() }.map { it.value }
                                 return completionHandler.completionHandler(onlyXRP.first(), null)
                             }catch (e: NoSuchElementException){
-                                return completionHandler.completionHandler(-1.0f, null)
+                                return completionHandler.completionHandler(-1.0, null)
                             }
 
                         }
                     }
                 }
-                completionHandler.completionHandler(-1.0f, null)
+                completionHandler.completionHandler(-1.0, null)
             }
 
             override fun onFailure(call: Call<JsonElement>, t: Throwable) {
-                completionHandler.completionHandler(0.0f, t)
+                completionHandler.completionHandler(0.0, t)
             }
         })
     }

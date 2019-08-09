@@ -32,7 +32,7 @@ class YOROIAPI {
     }
 }
 
-interface ADABalanceHandle          { fun completionHandler(balance: Float, err: Throwable?)}
+interface ADABalanceHandle          { fun completionHandler(balance: Double, err: Throwable?)}
 interface ADATransactionsHandle     { fun completionHandler(transactions:Array<ADATransaction>?, err: Throwable?)}
 interface ADASendCoinHandle         { fun completionHandler(transID: String, success: Boolean, errStr: String)}
 interface ADAUnspentOutputsHandle   { fun completionHandler(unspentOutputs: Array<ADAUnspentTransaction>, err: Throwable?)}
@@ -86,19 +86,19 @@ class Gada {
                 val body = response.body()
                 if ((body != null) && (body!!.get("sum") != null) && !body!!.get("sum").isJsonNull) {
                     try {
-                        val sum = (body!!.get("sum").asString.toLongOrNull() ?: -1).toFloat() / ADACoin
+                        val sum = (body!!.get("sum").asString.toLongOrNull() ?: -1).toDouble() / ADACoin
                         completionHandler.completionHandler(sum, null)
                     }catch (e: ClassCastException) {
-                        completionHandler.completionHandler(-1.0f, null)
+                        completionHandler.completionHandler(-1.0, null)
                     }catch (e: IllegalStateException) {
-                        completionHandler.completionHandler(-1.0f, null)
+                        completionHandler.completionHandler(-1.0, null)
                     }
                 }else{
-                    completionHandler.completionHandler(-1.0f, null)
+                    completionHandler.completionHandler(-1.0, null)
                 }
             }
             override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                completionHandler.completionHandler(0.0f, t)
+                completionHandler.completionHandler(0.0, t)
             }
         })
     }

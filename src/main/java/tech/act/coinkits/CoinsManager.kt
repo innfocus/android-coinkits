@@ -22,7 +22,7 @@ import tech.act.coinkits.ripple.networking.XRPSubmitTxtHandle
 import tech.act.coinkits.ripple.networking.XRPTransactionsHandle
 import kotlin.math.acos
 
-interface BalanceHandle         { fun completionHandler(balance: Float, success: Boolean)}
+interface BalanceHandle         { fun completionHandler(balance: Double, success: Boolean)}
 interface TransactionsHandle    { fun completionHandler(transactions:Array<TransationData>?, moreParam: String, errStr: String)}
 interface SendCoinHandle        { fun completionHandler(transID: String, success: Boolean, errStr: String)}
 interface EstimateFeeHandle     { fun completionHandler(estimateFee: Double, errStr: String)}
@@ -159,7 +159,7 @@ class CoinsManager: ICoinsManager {
                 }
             }
         }else{
-            completionHandler.completionHandler(0.0f, false)
+            completionHandler.completionHandler(0.0, false)
         }
     }
 
@@ -337,46 +337,46 @@ class CoinsManager: ICoinsManager {
         val adds = addresses.map { it.rawAddressString() }
         if (adds.isNotEmpty()) {
             Gbtc.shared.getBalance(adds.toTypedArray(), object : BTCBalanceHandle {
-                override fun completionHandler(balance: Float, err: Throwable?) {
+                override fun completionHandler(balance: Double, err: Throwable?) {
                     if ((err != null) or (balance < 0)) {
-                        completionHandler.completionHandler(0.0f, false)
+                        completionHandler.completionHandler(0.0, false)
                     } else {
                         completionHandler.completionHandler(balance, true)
                     }
                 }
             })
         } else {
-            completionHandler.completionHandler(0.0f, false)
+            completionHandler.completionHandler(0.0, false)
         }
     }
 
     private fun getETHBalance(address: ACTAddress, completionHandler: BalanceHandle) {
-        completionHandler.completionHandler(0.0f, false)
+        completionHandler.completionHandler(0.0, false)
     }
 
     private fun getADABalance(addresses: Array<ACTAddress>, completionHandler: BalanceHandle) {
         val adds = addresses.map { it.rawAddressString() }
         if (adds.isNotEmpty()) {
             Gada.shared.getBalance(adds.toTypedArray(), object : ADABalanceHandle {
-                override fun completionHandler(balance: Float, err: Throwable?) {
+                override fun completionHandler(balance: Double, err: Throwable?) {
                     if ((err != null) or (balance < 0)) {
-                        completionHandler.completionHandler(0.0f, false)
+                        completionHandler.completionHandler(0.0, false)
                     } else {
                         completionHandler.completionHandler(balance, true)
                     }
                 }
             })
         } else {
-            completionHandler.completionHandler(0.0f, false)
+            completionHandler.completionHandler(0.0, false)
         }
     }
 
     private fun getXRPBalance(address: ACTAddress, completionHandler: BalanceHandle) {
         val addString = address.rawAddressString()
         Gxrp.shared.getBalance(addString, object : XRPBalanceHandle {
-            override fun completionHandler(balance: Float, err: Throwable?) {
+            override fun completionHandler(balance: Double, err: Throwable?) {
                 if ((err != null) or (balance < 0)) {
-                    completionHandler.completionHandler(0.0f, false)
+                    completionHandler.completionHandler(0.0, false)
                 } else {
                     completionHandler.completionHandler(balance, true)
                 }
