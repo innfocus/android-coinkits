@@ -502,7 +502,7 @@ class CoinsManager: ICoinsManager {
                             completionHandler   : SendCoinHandle){
         val prvKeys = privateKeys(ACTCoin.Ripple) ?: return completionHandler.completionHandler("", false, "Not supported")
         val priKey  = prvKeys.first()
-        val memo = if (networkMemo != null) XRPMemo(networkMemo!!.memo, networkMemo!!.destinationTag) else null
+        val memo = if (networkMemo != null) XRPMemo(networkMemo.memo, networkMemo.destinationTag) else null
         Gxrp.shared.sendCoin(priKey, fromAddress, toAddressStr, amount, memo, sequence, object : XRPSubmitTxtHandle {
             override fun completionHandler(transID: String, sequence: Int?, success: Boolean, errStr: String) {
                 completionHandler.completionHandler(transID, success, errStr)

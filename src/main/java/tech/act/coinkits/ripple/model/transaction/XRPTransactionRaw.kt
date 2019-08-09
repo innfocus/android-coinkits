@@ -55,7 +55,7 @@ class XRPTransactionRaw {
         data        += sequence.bigENDIAN()
         // DestinationTag
         if (memo != null && memo?.destinationTag != null) {
-            val tag = memo!!.destinationTag
+            val tag = memo!!.destinationTag!!
             data    += XRPMemoEnum.DestinationTag.value
             data    += tag.toInt().bigENDIAN()
         }
@@ -90,8 +90,8 @@ class XRPTransactionRaw {
         data    += des.count().toByte()
         data    += des
         // Memo
-        if (memo != null && memo!!.memo.isNotEmpty()) {
-            val bs  = memo!!.memo.toByteArray()
+        if (memo != null && memo?.memo != null &&  memo?.memo!!.isNotEmpty()) {
+            val bs  = memo?.memo!!.toByteArray()
             data    += XRPMemoEnum.Starts.value
             data    += XRPMemoEnum.Start.value
             data    += XRPMemoEnum.Data.value
