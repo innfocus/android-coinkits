@@ -21,7 +21,7 @@ class XRPAPI {
         const val server        = "https://data.ripple.com/v2/"
         const val serverTest    = "https://testnet.data.api.ripple.com/v2/"
         const val balance       = "accounts/xxx/balances?currency=XRP"
-        const val transactions  = "accounts/xxx/transactions?limit=20&descending=true"
+        const val transactions  = "accounts/xxx/transactions?limit=20&type=Payment"
     }
 }
 
@@ -107,7 +107,7 @@ class Gxrp {
             override fun onResponse(call: Call<JsonElement>, response: Response<JsonElement>) {
                 val body = response.body()
                 if (body!!.isJsonObject) {
-                    completionHandler.completionHandler(XRPTransaction.parser(body!!.asJsonObject), null)
+                    completionHandler.completionHandler(XRPTransaction.parser(body.asJsonObject), null)
                 }else{
                     completionHandler.completionHandler(null, null)
                 }
@@ -132,6 +132,11 @@ class Gxrp {
         jsonRPC.getAccountInfo(account, object : XRPAccountInfoHandle {
             override fun completionHandler(accInfo: XRPAccountInfo?, err: Throwable?) {
                 val acc = accInfo ?: return completionHandler.completionHandler("", null, false, err?.localizedMessage ?: "")
+                val balance             = acc.accountData.balance.toDoubleOrNull() ?: 0.0
+                // Around = 10 unit of XRP
+                if (balance < ((amount + nw.coin.feeDefault() + nw.coin.minimumValue()) * XRPCoin) - 10) {
+                    return completionHandler.completionHandler("", null, false, "Insufficient Funds")
+                }
                 val tranRaw             = XRPTransactionRaw()
                 tranRaw.account         = account
                 tranRaw.destination     = toAddressStr

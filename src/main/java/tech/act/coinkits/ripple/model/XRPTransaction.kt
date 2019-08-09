@@ -36,11 +36,17 @@ class XRPTransactionItem(
     @SerializedName("date")
     val date                    : String   = "",
     @SerializedName("tx")
-    private val _tx             : JsonElement
+    private val _tx             : JsonElement,
+    @SerializedName("meta")
+    private val _meta           : JsonElement
 ){
     private var txTmp   : XRPTX?    = null
             var tx      get()       = txTmp ?: XRPTX.parser(_tx)
                         set(value)  {txTmp = value}
+
+    private var metaTmp : XRPMeta?  = null
+            var meta    get()       = metaTmp ?: XRPMeta.parser(_meta)
+                        set(value)  {metaTmp = value}
 
     companion object {
         fun parser(json: JsonElement): Array<XRPTransactionItem> {
@@ -78,6 +84,23 @@ class XRPTX(
                 Gson().fromJson(json, XRPTX::class.java)
             }catch (e: JsonSyntaxException) {
                 null
+            }
+        }
+    }
+}
+
+class XRPMeta(
+    @SerializedName("TransactionIndex")
+    val index   : UInt   = 0u,
+    @SerializedName("TransactionResult")
+    val result  : String   = ""
+){
+    companion object {
+        fun parser(json: JsonElement): XRPMeta {
+            return try {
+                Gson().fromJson(json, XRPMeta::class.java)
+            }catch (e: JsonSyntaxException) {
+                XRPMeta()
             }
         }
     }

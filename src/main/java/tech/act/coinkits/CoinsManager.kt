@@ -430,7 +430,8 @@ class CoinsManager: ICoinsManager {
         Gxrp.shared.getTransactions(address.rawAddressString(), moreParam, object : XRPTransactionsHandle {
             override fun completionHandler(transactions: XRPTransaction?, err: Throwable?) {
                 if (transactions != null) {
-                    val trans = transactions.transactions!!.toTransactionDatas(address.rawAddressString())
+                    val xrpTranFilter = transactions.transactions!!.filter{it.meta.result.toUpperCase().contains("SUCCESS")}.toTypedArray()
+                    val trans = xrpTranFilter.toTransactionDatas(address.rawAddressString())
                     if (transactions.marker == null) {
                         completionHandler.completionHandler(trans, "", "")
                     } else {
