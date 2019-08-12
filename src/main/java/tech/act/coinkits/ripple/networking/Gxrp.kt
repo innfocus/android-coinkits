@@ -134,7 +134,8 @@ class Gxrp {
                 val acc = accInfo ?: return completionHandler.completionHandler("", null, false, err?.localizedMessage ?: "")
                 val balance             = acc.accountData.balance.toDoubleOrNull() ?: 0.0
                 // Around = 10 unit of XRP
-                if (balance < ((amount + nw.coin.feeDefault() + nw.coin.minimumValue()) * XRPCoin) - 10) {
+//                if (balance < ((amount + nw.coin.feeDefault() + nw.coin.minimumValue()) * XRPCoin) - 10) {
+                if (balance < ((amount + nw.coin.feeDefault() + nw.coin.minimumAmount()) * XRPCoin)) {
                     return completionHandler.completionHandler("", null, false, "Insufficient Funds")
                 }
                 val tranRaw             = XRPTransactionRaw()
