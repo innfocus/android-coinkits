@@ -7,6 +7,8 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Path
+import retrofit2.http.QueryMap
 import retrofit2.http.Url
 import tech.act.coinkits.CoinsManager
 import tech.act.coinkits.hdwallet.bip32.ACTCoin
@@ -29,8 +31,8 @@ private interface IGxrp {
     @GET
     fun getBalance(@Url url: String): Call<JsonElement>
 
-    @GET
-    fun transactions(@Url url: String): Call<JsonElement>
+    @GET("accounts/{address}/transactions")
+    fun transactions(@Path("address") address: String, @QueryMap options: Map<String, String>): Call<JsonElement>
 
     companion object {
         fun create(server: String): IGxrp {
@@ -98,11 +100,14 @@ class Gxrp {
     fun getTransactions(address          : String,
                         market           : String,
                         completionHandler: XRPTransactionsHandle) {
-        var url = XRPAPI.transactions.replace("xxx", address)
+        val data = HashMap<String, String>()
+        data["limit"] = "100"
+        data["type"] = "Payment"
+        data["descending"] = "true"
         if (market.isNotEmpty()) {
-            url +=  "&marker=" + market
+            data["marker"] = "market"
         }
-        val call = getService().transactions(url)
+        val call = getService().transactions(address, data)
         call.enqueue(object : Callback<JsonElement> {
             override fun onResponse(call: Call<JsonElement>, response: Response<JsonElement>) {
                 val body = response.body()
