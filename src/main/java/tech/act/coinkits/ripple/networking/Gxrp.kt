@@ -98,14 +98,14 @@ class Gxrp {
     }
 
     fun getTransactions(address          : String,
-                        market           : String,
+                        marker           : String,
                         completionHandler: XRPTransactionsHandle) {
         val data = HashMap<String, String>()
         data["limit"] = "100"
         data["type"] = "Payment"
         data["descending"] = "true"
-        if (market.isNotEmpty()) {
-            data["marker"] = "market"
+        if (marker.isNotEmpty()) {
+            data["marker"] = marker
         }
         val call = getService().transactions(address, data)
         call.enqueue(object : Callback<JsonElement> {
