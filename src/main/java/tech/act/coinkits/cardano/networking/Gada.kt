@@ -3,13 +3,15 @@ package tech.act.coinkits.cardano.networking
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import okhttp3.OkHttpClient
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.*
+import retrofit2.http.Body
+import retrofit2.http.POST
 import tech.act.coinkits.cardano.helpers.ADACoin
 import tech.act.coinkits.cardano.model.CarAddress
 import tech.act.coinkits.cardano.model.transaction.*
@@ -20,6 +22,7 @@ import tech.act.coinkits.filter
 import tech.act.coinkits.hdwallet.bip32.ACTPrivateKey
 import tech.act.coinkits.hdwallet.bip44.ACTAddress
 import tech.act.coinkits.hdwallet.core.helpers.toDateString
+
 
 class YOROIAPI {
     companion object {
@@ -60,8 +63,14 @@ private interface IGada {
 
     companion object {
         fun create(): IGada {
+
+            val client = OkHttpClient.Builder()
+                    .addInterceptor(UserAgentInterceptor())
+                    .build()
+
             val retrofit = Retrofit.Builder()
                 .baseUrl(YOROIAPI.server)
+                .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
             return retrofit.create(IGada::class.java)
