@@ -116,10 +116,10 @@ class ACTHDWallet @Throws(ACTBIP39Exception::class) constructor(mnemonic: String
         try {
             derivations.forEach {
                 val current = it.trim()
-                if (!current.isEmpty()) {
+                if (current.isNotEmpty()) {
                     val isHard  = current.contains("'")
                     val item    = current.replace("'", "")
-                    var idx     = item.toIntOrNull() ?: -1
+                    val idx     = item.toIntOrNull() ?: -1
                     when (idx > -1) {
                         true    -> {privateKey = privateKey.derived(ACTDerivationNode(idx, isHard))}
                         false   -> {/* SKIP */}

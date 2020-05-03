@@ -1,14 +1,22 @@
 package tech.act.coinkits.hdwallet.core.crypto
 
+import org.spongycastle.asn1.ASN1Integer
+import org.spongycastle.asn1.DERSequenceGenerator
 import org.spongycastle.asn1.sec.SECNamedCurves
 import org.spongycastle.crypto.digests.KeccakDigest
 import org.spongycastle.crypto.digests.RIPEMD160Digest
+import org.spongycastle.crypto.digests.SHA256Digest
 import org.spongycastle.crypto.digests.SHA512Digest
 import org.spongycastle.crypto.generators.PKCS5S2ParametersGenerator
 import org.spongycastle.crypto.macs.HMac
 import org.spongycastle.crypto.params.ECDomainParameters
+import org.spongycastle.crypto.params.ECPrivateKeyParameters
 import org.spongycastle.crypto.params.KeyParameter
+import org.spongycastle.crypto.signers.ECDSASigner
+import org.spongycastle.crypto.signers.HMacDSAKCalculator
 import tech.act.coinkits.hdwallet.core.helpers.sha256
+import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.math.BigInteger
 
 class ACTCryto {
@@ -70,6 +78,30 @@ class ACTCryto {
 
         fun convertToUncompressed(publicKey: ByteArray): ByteArray {
             return params.curve.decodePoint(publicKey).getEncoded(false)
+        }
+
+        fun signSerializeDER(sighash: ByteArray, privateKey: ByteArray): ByteArray? {
+
+            val signer      = ECDSASigner(HMacDSAKCalculator(SHA256Digest()))
+            /* @Phat, Thank you for your supported!!! */
+            val priKey      = ECPrivateKeyParameters(BigInteger(1, privateKey), ecParams)
+            signer.init(true, priKey)
+            val sigs        = signer.generateSignature(sighash)
+            val r           = sigs[0]
+            var s           = sigs[1]
+            val otherS      = ecParams.n.subtract(s)
+            if (s > otherS) {
+                s = otherS
+            }
+            try {
+                val bos = ByteArrayOutputStream(74)
+                val seq = DERSequenceGenerator(bos)
+                seq.addObject(ASN1Integer(r))
+                seq.addObject(ASN1Integer(s))
+                seq.close()
+                return bos.toByteArray()
+            }catch (e: IOException) {}
+            return null
         }
     }
 }

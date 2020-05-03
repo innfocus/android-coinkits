@@ -2,7 +2,6 @@ package tech.act.coinkits.cardano.model
 
 import org.spongycastle.crypto.digests.SHA512Digest
 import org.whispersystems.curve25519.java.*
-import tech.act.coinkits.hdwallet.core.helpers.plus
 
 class CarKeyPair {
     var publicKey   : CarPublicKey
@@ -38,7 +37,7 @@ class CarKeyPair {
         sha512.doFinal(hram, 0)
         sc_reduce.sc_reduce(hram)
         sc_muladd.sc_muladd(signatureR, hram, privateKey.bytes(), r)
-        return signatureL plus signatureR
+        return signatureL + signatureR
     }
 
 }

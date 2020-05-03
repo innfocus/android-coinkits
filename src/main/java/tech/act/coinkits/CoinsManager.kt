@@ -13,25 +13,36 @@ import tech.act.coinkits.hdwallet.bip32.Change
 import tech.act.coinkits.hdwallet.bip39.ACTBIP39Exception
 import tech.act.coinkits.hdwallet.bip44.ACTAddress
 import tech.act.coinkits.hdwallet.bip44.ACTHDWallet
+import tech.act.coinkits.hdwallet.bip44.isAddress
+import tech.act.coinkits.ripple.model.XRPTransaction
+import tech.act.coinkits.ripple.model.transaction.XRPMemo
+import tech.act.coinkits.ripple.networking.Gxrp
+import tech.act.coinkits.ripple.networking.XRPBalanceHandle
+import tech.act.coinkits.ripple.networking.XRPSubmitTxtHandle
+import tech.act.coinkits.ripple.networking.XRPTransactionsHandle
+import kotlin.math.acos
 
-interface BalanceHandle         { fun completionHandler(balance: Float, success: Boolean)}
-interface TransactionsHandle    { fun completionHandler(transations:Array<TransationData>?, errStr: String)}
+interface BalanceHandle         { fun completionHandler(balance: Double, success: Boolean)}
+interface TransactionsHandle    { fun completionHandler(transactions:Array<TransationData>?, moreParam: String, errStr: String)}
 interface SendCoinHandle        { fun completionHandler(transID: String, success: Boolean, errStr: String)}
 interface EstimateFeeHandle     { fun completionHandler(estimateFee: Double, errStr: String)}
 
 interface ICoinsManager {
     fun getHDWallet     (): ACTHDWallet?
+    fun setNetworks     (networks: Array<ACTNetwork>)
+    fun currentNetwork  (coin: ACTCoin) : ACTNetwork?
     fun cleanAll        ()
     fun firstAddress    (coin: ACTCoin): ACTAddress?
     fun addresses       (coin: ACTCoin): Array<ACTAddress>?
     fun getBalance      (coin: ACTCoin, completionHandler: BalanceHandle)
-    fun getTransactions (coin: ACTCoin, completionHandler: TransactionsHandle)
+    fun getTransactions (coin: ACTCoin, moreParam: String = "", completionHandler: TransactionsHandle)
     fun sendCoin        (fromAddress       : ACTAddress,
                          toAddressStr      : String,
                          serAddressStr     : String,
                          amount            : Double,
                          networkFee        : Double,
                          serviceFee        : Double,
+                         networkMemo       : MemoData? = null,
                          completionHandler : SendCoinHandle)
 
     fun estimateFee      (serAddressStr     : String,
@@ -45,14 +56,15 @@ class CoinsManager: ICoinsManager {
     companion object {
         val shared = CoinsManager()
     }
-            val coinsSupported      = arrayListOf(ACTCoin.Bitcoin, ACTCoin.Ethereum, ACTCoin.Cardano)
     private var hdWallet            : ACTHDWallet? = null
     private var prvKeysManager      = mutableMapOf<String, Array<ACTPrivateKey>>()
     private var extendPrvKeysNumber = mutableMapOf<String, Int>()
     private var addressesManager    = mutableMapOf<String, Array<ACTAddress>>()
-            var networkManager      = mapOf(ACTCoin.Bitcoin.symbolName()    to ACTNetwork(ACTCoin.Bitcoin   , false),
-                                            ACTCoin.Ethereum.symbolName()   to ACTNetwork(ACTCoin.Ethereum  , false),
-                                            ACTCoin.Cardano.symbolName()    to ACTNetwork(ACTCoin.Cardano   , false))
+    private var coinsSupported      = arrayListOf(ACTCoin.Bitcoin, ACTCoin.Ethereum, ACTCoin.Cardano, ACTCoin.Ripple)
+    private var networkManager      = mutableMapOf( ACTCoin.Bitcoin.symbolName()    to ACTNetwork(ACTCoin.Bitcoin   , true),
+                                                    ACTCoin.Ethereum.symbolName()   to ACTNetwork(ACTCoin.Ethereum  , true),
+                                                    ACTCoin.Cardano.symbolName()    to ACTNetwork(ACTCoin.Cardano   , false),
+                                                    ACTCoin.Ripple.symbolName()    to ACTNetwork(ACTCoin.Ripple   , true))
             var mnemonicRecover     = ""
             var mnemonic            = ""
 
@@ -70,6 +82,25 @@ class CoinsManager: ICoinsManager {
         }
     }
 
+    override fun setNetworks(networks: Array<ACTNetwork>) {
+        /* Store mnemonic before clean data */
+        val mn = mnemonic
+        cleanAll()
+        /* Restore mnemonic */
+        mnemonic = mn
+        coinsSupported.clear()
+        networkManager.clear()
+        networks.forEach {
+            val coin = it.coin
+            coinsSupported.add(coin)
+            networkManager[coin.symbolName()] = it
+        }
+    }
+
+    override fun currentNetwork(coin: ACTCoin): ACTNetwork? {
+        return networkManager[coin.symbolName()]
+    }
+
     override fun cleanAll() {
         hdWallet        = null
         mnemonic        = ""
@@ -81,9 +112,9 @@ class CoinsManager: ICoinsManager {
 
     override fun firstAddress(coin: ACTCoin): ACTAddress? {
         val adds = addresses(coin)
-        return if ((adds != null) && adds!!.isNotEmpty()) {
+        return if ((adds != null) && adds.isNotEmpty()) {
             adds.first()
-        }else{
+        } else {
             null
         }
     }
@@ -112,7 +143,7 @@ class CoinsManager: ICoinsManager {
 
     override fun getBalance(coin: ACTCoin, completionHandler: BalanceHandle) {
         val adds = addresses(coin)
-        if ((adds != null) && adds!!.isNotEmpty()) {
+        if ((adds != null) && adds.isNotEmpty()) {
             when(coin) {
                 ACTCoin.Bitcoin -> {
                     getBTCBalance(adds, completionHandler)
@@ -123,16 +154,19 @@ class CoinsManager: ICoinsManager {
                 ACTCoin.Cardano -> {
                     getADABalance(adds, completionHandler)
                 }
+                ACTCoin.Ripple -> {
+                    getXRPBalance(adds.first(), completionHandler)
+                }
             }
         }else{
-            completionHandler.completionHandler(0.0f, false)
+            completionHandler.completionHandler(0.0, false)
         }
     }
 
-    override fun getTransactions(coin: ACTCoin, completionHandler: TransactionsHandle) {
+    override fun getTransactions(coin: ACTCoin, moreParam: String, completionHandler: TransactionsHandle) {
         val adds = addresses(coin)
-        if ((adds != null) && adds!!.isNotEmpty()) {
-            when(coin) {
+        if ((adds != null) && adds.isNotEmpty()) {
+            when (coin) {
                 ACTCoin.Bitcoin -> {
                     getBTCTransactions(adds, completionHandler)
                 }
@@ -142,9 +176,12 @@ class CoinsManager: ICoinsManager {
                 ACTCoin.Cardano -> {
                     getADATransactions(adds, completionHandler)
                 }
+                ACTCoin.Ripple -> {
+                    getXRPTransactions(adds.first(), moreParam, completionHandler)
+                }
             }
-        }else{
-            completionHandler.completionHandler(arrayOf(), "")
+        } else {
+            completionHandler.completionHandler(arrayOf(), "", "")
         }
     }
 
@@ -156,7 +193,11 @@ class CoinsManager: ICoinsManager {
     {
         when(network.coin) {
             ACTCoin.Bitcoin     -> {completionHandler.completionHandler(0.0, "TO DO")   }
-            ACTCoin.Ethereum    -> { completionHandler.completionHandler(0.0, "TO DO")  }
+            ACTCoin.Ethereum    -> {completionHandler.completionHandler(0.0, "TO DO")  }
+            ACTCoin.Ripple      -> {
+                val hasSerFee =  serAddressStr.isAddress(ACTCoin.Ripple)
+                completionHandler.completionHandler(ACTCoin.Ripple.feeDefault() * (if (hasSerFee) 2 else 1), "")
+            }
             ACTCoin.Cardano     -> {
                 val prvKeys     = privateKeys(ACTCoin.Cardano)  ?: arrayOf()
                 val addresses   = addresses(ACTCoin.Cardano)    ?: arrayOf()
@@ -187,6 +228,7 @@ class CoinsManager: ICoinsManager {
                           amount            : Double,
                           networkFee        : Double,
                           serviceFee        : Double,
+                          networkMemo       : MemoData?,
                           completionHandler : SendCoinHandle) {
         when(fromAddress.network.coin) {
             ACTCoin.Bitcoin -> {
@@ -217,6 +259,17 @@ class CoinsManager: ICoinsManager {
                     amount,
                     networkFee,
                     serviceFee,
+                    completionHandler)
+            }
+            ACTCoin.Ripple -> {
+                sendXRPCoin(
+                    fromAddress,
+                    toAddressStr,
+                    serAddressStr,
+                    amount,
+                    serviceFee,
+                    networkMemo,
+                    null,
                     completionHandler)
             }
         }
@@ -281,81 +334,114 @@ class CoinsManager: ICoinsManager {
     }
 
     private fun getBTCBalance(addresses: Array<ACTAddress>, completionHandler: BalanceHandle) {
-        val adds = addresses.map { it.rawAddressString()}
+        val adds = addresses.map { it.rawAddressString() }
         if (adds.isNotEmpty()) {
-            Gbtc.shared.getBalance(adds.toTypedArray(), object:BTCBalanceHandle {
-                override fun completionHandler(balance: Float, err: Throwable?) {
+            Gbtc.shared.getBalance(adds.toTypedArray(), object : BTCBalanceHandle {
+                override fun completionHandler(balance: Double, err: Throwable?) {
                     if ((err != null) or (balance < 0)) {
-                        completionHandler.completionHandler(0.0f, false)
-                    }else{
+                        completionHandler.completionHandler(0.0, false)
+                    } else {
                         completionHandler.completionHandler(balance, true)
                     }
                 }
             })
-        }else {
-            completionHandler.completionHandler(0.0f, false)
+        } else {
+            completionHandler.completionHandler(0.0, false)
         }
     }
 
     private fun getETHBalance(address: ACTAddress, completionHandler: BalanceHandle) {
-        completionHandler.completionHandler(0.0f, false)
+        completionHandler.completionHandler(0.0, false)
     }
 
     private fun getADABalance(addresses: Array<ACTAddress>, completionHandler: BalanceHandle) {
-        val adds = addresses.map { it.rawAddressString()}
+        val adds = addresses.map { it.rawAddressString() }
         if (adds.isNotEmpty()) {
-            Gada.shared.getBalance(adds.toTypedArray(), object:ADABalanceHandle {
-                override fun completionHandler(balance: Float, err: Throwable?) {
-                    if ((err != null)) {
-                        completionHandler.completionHandler(0.0f, false)
-                    }else{
+            Gada.shared.getBalance(adds.toTypedArray(), object : ADABalanceHandle {
+                override fun completionHandler(balance: Double, err: Throwable?) {
+                    if ((err != null) or (balance < 0)) {
+                        completionHandler.completionHandler(0.0, false)
+                    } else {
                         completionHandler.completionHandler(balance, true)
                     }
                 }
             })
-        }else{
-            completionHandler.completionHandler(0.0f, false)
+        } else {
+            completionHandler.completionHandler(0.0, false)
         }
     }
 
+    private fun getXRPBalance(address: ACTAddress, completionHandler: BalanceHandle) {
+        val addString = address.rawAddressString()
+        Gxrp.shared.getBalance(addString, object : XRPBalanceHandle {
+            override fun completionHandler(balance: Double, err: Throwable?) {
+                if ((err != null) or (balance < 0)) {
+                    completionHandler.completionHandler(0.0, false)
+                } else {
+                    completionHandler.completionHandler(balance, true)
+                }
+            }
+        })
+    }
+
     private fun getBTCTransactions(addresses: Array<ACTAddress>, completionHandler: TransactionsHandle) {
-        val adds = addresses.map { it.rawAddressString()}
+        val adds = addresses.map { it.rawAddressString() }
         if (adds.isNotEmpty()) {
             Gbtc.shared.transactions(adds.toTypedArray(), object : BTCTransactionsHandle {
                 override fun completionHandler(transactions: Array<BTCTransactionData>, err: Throwable?) {
-                    completionHandler.completionHandler(transactions.toTransactionDatas(adds.toTypedArray()), err?.localizedMessage ?: "Error")
+                    completionHandler.completionHandler(transactions.toTransactionDatas(adds.toTypedArray()), "", err?.localizedMessage
+                            ?: "Error")
                 }
             })
-        }else{
-            completionHandler.completionHandler(null, "Error")
+        } else {
+            completionHandler.completionHandler(null, "", "Error")
         }
     }
 
     private fun getETHTransactions(address: ACTAddress, completionHandler: TransactionsHandle) {
-        completionHandler.completionHandler(arrayOf(), "TO DO")
+        completionHandler.completionHandler(arrayOf(), "", "TO DO")
     }
 
     private fun getADATransactions(addresses: Array<ACTAddress>, completionHandler: TransactionsHandle) {
-        val adds = addresses.map { it.rawAddressString()}
+        val adds = addresses.map { it.rawAddressString() }
         if (adds.isNotEmpty()) {
             Gada.shared.addressUsed(adds.toTypedArray(), completionHandler = object : ADAAddressUsedHandle {
                 override fun completionHandler(addressUsed: Array<String>, err: Throwable?) {
                     Gada.shared.transactions(addressUsed,
-                                            ignoreAddsUsed      = true,
-                                            completionHandler   = object:ADATransactionsHandle {
-                        override fun completionHandler(transactions: Array<ADATransaction>?, err: Throwable?) {
-                            if (transactions != null) {
-                                completionHandler.completionHandler(transactions.toTransactionDatas(addressUsed), "")
-                            }else{
-                                completionHandler.completionHandler(null, err?.localizedMessage ?: "Error")
-                            }
-                        }
-                    })
+                            ignoreAddsUsed = true,
+                            completionHandler = object : ADATransactionsHandle {
+                                override fun completionHandler(transactions: Array<ADATransaction>?, err: Throwable?) {
+                                    if (transactions != null) {
+                                        completionHandler.completionHandler(transactions.toTransactionDatas(addressUsed), "", "")
+                                    } else {
+                                        completionHandler.completionHandler(null, "", err?.localizedMessage
+                                                ?: "Error")
+                                    }
+                                }
+                            })
                 }
             })
-        }else{
-            completionHandler.completionHandler(null, "Error")
+        } else {
+            completionHandler.completionHandler(null, "", "Error")
         }
+    }
+
+    private fun getXRPTransactions(address: ACTAddress, moreParam: String, completionHandler: TransactionsHandle) {
+        Gxrp.shared.getTransactions(address.rawAddressString(), moreParam, object : XRPTransactionsHandle {
+            override fun completionHandler(transactions: XRPTransaction?, err: Throwable?) {
+                if (transactions != null) {
+                    val xrpTranFilter = transactions.transactions!!.filter{it.meta.result.toUpperCase().contains("SUCCESS")}.toTypedArray()
+                    val trans = xrpTranFilter.toTransactionDatas(address.rawAddressString())
+                    if (transactions.marker == null) {
+                        completionHandler.completionHandler(trans, "", "")
+                    } else {
+                        completionHandler.completionHandler(trans, transactions.marker, "")
+                    }
+                } else {
+                    completionHandler.completionHandler(null, "", err?.localizedMessage ?: "Error")
+                }
+            }
+        })
     }
 
     private fun sendBTCCoin(fromAddress       : ACTAddress,
@@ -405,5 +491,30 @@ class CoinsManager: ICoinsManager {
         }else{
            completionHandler.completionHandler("", false, "")
         }
+    }
+
+    private fun sendXRPCoin(fromAddress         : ACTAddress,
+                            toAddressStr        : String,
+                            serAddressStr       : String,
+                            amount              : Double,
+                            serviceFee          : Double,
+                            networkMemo         : MemoData?,
+                            sequence            : Int? = null,
+                            completionHandler   : SendCoinHandle){
+        val prvKeys = privateKeys(ACTCoin.Ripple) ?: return completionHandler.completionHandler("", false, "Not supported")
+        val priKey  = prvKeys.first()
+        val memo = if (networkMemo != null) XRPMemo(networkMemo.memo, networkMemo.destinationTag) else null
+        Gxrp.shared.sendCoin(priKey, fromAddress, toAddressStr, amount, memo, sequence, object : XRPSubmitTxtHandle {
+            override fun completionHandler(transID: String, sequence: Int?, success: Boolean, errStr: String) {
+                completionHandler.completionHandler(transID, success, errStr)
+                /* Check to send service fee */
+                if (success && serAddressStr.isAddress(ACTCoin.Ripple) && serviceFee > 0) {
+                    sendXRPCoin(fromAddress, serAddressStr, "", serviceFee, 0.0, null, (sequence!! + 1), object : SendCoinHandle
+                    {
+                        override fun completionHandler(transID: String, success: Boolean, errStr: String) {}
+                    })
+                }
+            }
+        })
     }
 }

@@ -3,13 +3,15 @@ package tech.act.coinkits.cardano.networking
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import okhttp3.OkHttpClient
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.*
+import retrofit2.http.Body
+import retrofit2.http.POST
 import tech.act.coinkits.cardano.helpers.ADACoin
 import tech.act.coinkits.cardano.model.CarAddress
 import tech.act.coinkits.cardano.model.transaction.*
@@ -21,6 +23,7 @@ import tech.act.coinkits.hdwallet.bip32.ACTPrivateKey
 import tech.act.coinkits.hdwallet.bip44.ACTAddress
 import tech.act.coinkits.hdwallet.core.helpers.toDateString
 
+
 class YOROIAPI {
     companion object {
         const val server            = "https://iohk-mainnet.yoroiwallet.com/api/"
@@ -29,11 +32,10 @@ class YOROIAPI {
         const val history           = "txs/history"
         const val signed            = "txs/signed"
         const val addressUsed       = "addresses/filterUsed"
-        const val transationPending = "txs/pending"
     }
 }
 
-interface ADABalanceHandle          { fun completionHandler(balance: Float, err: Throwable?)}
+interface ADABalanceHandle          { fun completionHandler(balance: Double, err: Throwable?)}
 interface ADATransactionsHandle     { fun completionHandler(transactions:Array<ADATransaction>?, err: Throwable?)}
 interface ADASendCoinHandle         { fun completionHandler(transID: String, success: Boolean, errStr: String)}
 interface ADAUnspentOutputsHandle   { fun completionHandler(unspentOutputs: Array<ADAUnspentTransaction>, err: Throwable?)}
@@ -61,8 +63,14 @@ private interface IGada {
 
     companion object {
         fun create(): IGada {
+
+            val client = OkHttpClient.Builder()
+                    .addInterceptor(UserAgentInterceptor())
+                    .build()
+
             val retrofit = Retrofit.Builder()
                 .baseUrl(YOROIAPI.server)
+                .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
             return retrofit.create(IGada::class.java)
@@ -87,19 +95,19 @@ class Gada {
                 val body = response.body()
                 if ((body != null) && (body!!.get("sum") != null) && !body!!.get("sum").isJsonNull) {
                     try {
-                        val sum = (body!!.get("sum").asString.toLongOrNull() ?: -1).toFloat() / ADACoin
+                        val sum = (body!!.get("sum").asString.toLongOrNull() ?: -1).toDouble() / ADACoin
                         completionHandler.completionHandler(sum, null)
                     }catch (e: ClassCastException) {
-                        completionHandler.completionHandler(-1.0f, null)
+                        completionHandler.completionHandler(-1.0, null)
                     }catch (e: IllegalStateException) {
-                        completionHandler.completionHandler(-1.0f, null)
+                        completionHandler.completionHandler(-1.0, null)
                     }
                 }else{
-                    completionHandler.completionHandler(-1.0f, null)
+                    completionHandler.completionHandler(-1.0, null)
                 }
             }
             override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                completionHandler.completionHandler(0.0f, t)
+                completionHandler.completionHandler(0.0, t)
             }
         })
     }
@@ -351,8 +359,8 @@ class Gada {
     }
 
     fun sendTxAux(signedTx          : String,
-                          txId              : String,
-                          completionHandler : ADASendTxAuxHandle) {
+                  txId              : String,
+                  completionHandler : ADASendTxAuxHandle) {
         val params = JsonObject()
         params.addProperty("signedTx", signedTx)
         val call = apiService.sendTxAux(params)

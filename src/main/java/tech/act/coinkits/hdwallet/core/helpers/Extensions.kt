@@ -110,6 +110,12 @@ fun ByteArray.sha256(): ByteArray {
     return md.digest()
 }
 
+fun ByteArray.sha512(): ByteArray {
+    val md = MessageDigest.getInstance("SHA-512")
+    md.update(this)
+    return md.digest()
+}
+
 fun ByteArray.sha3256(): ByteArray {
     val sha3256 = SHA3.Digest256()
     sha3256.update(this)
@@ -154,17 +160,6 @@ fun ByteArray.bigENDIAN(): Int {
     return bb.int
 }
 
-infix fun ByteArray.plus(other: ByteArray): ByteArray {
-    val rs = ByteArray(size + other.size)
-    for (i in 0 until size) {
-        rs[i] = this[i]
-    }
-    for (i in 0 until other.size) {
-        rs[i + size] = other[i]
-    }
-    return rs
-}
-
 /*
 * CharArray extensions
 */
@@ -206,6 +201,13 @@ fun Int.bigENDIAN(): ByteArray {
 fun Int.int32Bytes(): ByteArray {
     val bb = ByteBuffer.allocate(4)
     bb.putInt(this)
+    return bb.array()
+}
+
+fun Double.int64Bytes(): ByteArray {
+    val bb = ByteBuffer.allocate(8)
+    bb.order(ByteOrder.BIG_ENDIAN)
+    bb.putLong(this.toLong())
     return bb.array()
 }
 

@@ -4,7 +4,6 @@ import android.util.Base64
 import co.nstant.`in`.cbor.CborBuilder
 import co.nstant.`in`.cbor.CborEncoder
 import co.nstant.`in`.cbor.model.DataItem
-import tech.act.coinkits.hdwallet.core.helpers.plus
 import java.io.ByteArrayOutputStream
 
 class TxAux(val tx: Tx, val witness: Array<TxWitness>) {
@@ -29,6 +28,6 @@ class TxAux(val tx: Tx, val witness: Array<TxWitness>) {
     fun encode(): ByteArray {
         val output = ByteArrayOutputStream()
         CborEncoder(output).encode(witness.serializer())
-        return byteArrayOf(0x82.toByte()) plus tx.encode() plus output.toByteArray()
+        return byteArrayOf(0x82.toByte()) + tx.encode() + output.toByteArray()
     }
 }

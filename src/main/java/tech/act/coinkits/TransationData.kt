@@ -7,6 +7,10 @@ import tech.act.coinkits.cardano.helpers.ADACoin
 import tech.act.coinkits.cardano.networking.models.ADATransaction
 import tech.act.coinkits.cardano.networking.models.ADATransactionInOut
 import tech.act.coinkits.hdwallet.bip32.ACTCoin
+import tech.act.coinkits.hdwallet.core.helpers.fromHexToByteArray
+import tech.act.coinkits.hdwallet.core.helpers.toDate
+import tech.act.coinkits.ripple.model.XRPCoin
+import tech.act.coinkits.ripple.model.XRPTransactionItem
 import java.io.Serializable
 import java.util.*
 
@@ -19,6 +23,7 @@ class TransationData : Serializable {
     var date            : Date = Date()
     var coin            : ACTCoin = ACTCoin.Bitcoin
     var isSend          = false
+    var memoNetwork     : MemoData? = null
 }
 
 /*
@@ -85,6 +90,47 @@ fun ADATransaction.toTransactionData(addresses: Array<String>): TransationData {
     result.coin         = ACTCoin.Cardano
     result.isSend       = addresses.filter { result.fromAddress.contains(it, ignoreCase = true)}.isNotEmpty()
     return result
+}
+
+/*
+* For Ripple
+ */
+
+fun Array<XRPTransactionItem>.toTransactionDatas(address: String): Array<TransationData> {
+    return map { it.toTransactionData(address) }.sortedByDescending { it.date }.toTypedArray()
+}
+
+fun XRPTransactionItem.toTransactionData(address: String): TransationData {
+    val tran            = TransationData()
+    tran.amount         = tx!!.amount / XRPCoin
+    tran.fee            = tx!!.fee / XRPCoin
+    tran.iD             = hash
+    tran.fromAddress    = tx!!.account
+    tran.toAddress      = tx!!.destination
+    tran.date           = date.toDate("yyyy-MM-dd'T'HH:mm:ssZ")
+    tran.coin           = ACTCoin.Ripple
+    tran.isSend         = tran.fromAddress.toLowerCase() == address.toLowerCase()
+    try {
+        val memoNetwork = MemoData("", null)
+        var memoText : String? = null
+        var destinationTag : UInt? = null
+        if (!tx!!.memos.isNullOrEmpty()) {
+            val memo            = tx!!.memos.first()
+            memoText            = memo.memoData.fromHexToByteArray().toString(Charsets.UTF_8)
+            memoNetwork.memo    = memoText
+        }
+
+        if (!tx!!.destinationTag.isNullOrEmpty()) {
+            destinationTag             = tx!!.destinationTag.toUIntOrNull() ?: null
+            memoNetwork.destinationTag = destinationTag
+        }
+
+        if ((memoText != null && memoText.isNotEmpty()) || (destinationTag != null && destinationTag > 0u)) {
+            tran.memoNetwork = memoNetwork
+        }
+
+    }catch (e: NoSuchElementException){}
+    return tran
 }
 
 /* END */
