@@ -120,7 +120,11 @@ class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {
     }
 
     fun derivationPath(): String {
-        return if (coin == ACTCoin.Bitcoin) (coinType().toString() + "'") else ("44'/" + coinType().toString() + "'/0'")
+
+        when {
+            coin == ACTCoin.Bitcoin && isTestNet    -> return (coinType().toString() + "'")
+            else                                    -> return ("44'/" + coinType().toString() + "'/0'")
+        }
     }
 
     fun derivateIdxMax(chain: Change): Int {
