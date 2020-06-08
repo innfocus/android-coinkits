@@ -15,7 +15,9 @@ class UserAgentInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response? {
         val originalRequest: Request = chain.request()
         val requestWithUserAgent: Request = originalRequest.newBuilder()
-                .header("User-Agent", userAgent)
+//                .header("User-Agent", userAgent)
+                .header("yoroi-version", "android / 2.2.0")
+                .header("tangata-manu", "yoroi")
                 .build()
         return chain.proceed(requestWithUserAgent)
     }
