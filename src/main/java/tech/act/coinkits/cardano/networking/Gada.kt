@@ -1,5 +1,6 @@
 package tech.act.coinkits.cardano.networking
 
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -11,14 +12,15 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 import tech.act.coinkits.cardano.helpers.ADACoin
 import tech.act.coinkits.cardano.model.CarAddress
 import tech.act.coinkits.cardano.model.transaction.*
 import tech.act.coinkits.cardano.networking.models.ADATransaction
 import tech.act.coinkits.cardano.networking.models.ADAUnspentTransaction
+import tech.act.coinkits.cardano.networking.models.CardanoCurrentBestBlock
 import tech.act.coinkits.exclude
-import tech.act.coinkits.filter
 import tech.act.coinkits.hdwallet.bip32.ACTPrivateKey
 import tech.act.coinkits.hdwallet.bip44.ACTAddress
 import tech.act.coinkits.hdwallet.core.helpers.toDateString
@@ -26,12 +28,13 @@ import tech.act.coinkits.hdwallet.core.helpers.toDateString
 
 class YOROIAPI {
     companion object {
-        const val server            = "https://iohk-mainnet.yoroiwallet.com/api/"
-        const val utxo              = "txs/utxoForAddresses"
-        const val utxoSum           = "txs/utxoSumForAddresses"
-        const val history           = "txs/history"
-        const val signed            = "txs/signed"
-        const val addressUsed       = "addresses/filterUsed"
+        const val server = "https://iohk-mainnet.yoroiwallet.com/api/"
+        const val utxo = "txs/utxoForAddresses"
+        const val utxoSum = "txs/utxoSumForAddresses"
+        const val history = "v2/txs/history"
+        const val signed = "txs/signed"
+        const val addressUsed = "v2/addresses/filterUsed"
+        const val bestblock = "v2/bestblock"
     }
 }
 
@@ -67,6 +70,10 @@ interface ADAEstimateFeeHandle {
     fun completionHandler(estimateFee: Double, errStr: String)
 }
 
+interface ADACurrentBlockHandle {
+    fun completionHandler(currentBestBlock: CardanoCurrentBestBlock?, errStr: String)
+}
+
 private interface IGada {
 
     @POST(YOROIAPI.utxoSum)
@@ -83,6 +90,9 @@ private interface IGada {
 
     @POST(YOROIAPI.signed)
     fun sendTxAux(@Body params: JsonObject): Call<JsonElement>
+
+    @GET(YOROIAPI.bestblock)
+    fun bestblock(): Call<JsonElement>
 
     companion object {
         fun create(): IGada {
@@ -105,6 +115,7 @@ class Gada {
 
     companion object {
         val shared = Gada()
+        lateinit var currentBestBlock: CardanoCurrentBestBlock
     }
 
     private val apiService = IGada.create()
@@ -139,7 +150,6 @@ class Gada {
     }
 
     fun transactions(addresses: Array<String>,
-                     dateFrom: String = "2000-01-01T00:00:00.000Z",
                      transJoin: Array<ADATransaction> = arrayOf(),
                      ignoreAddsUsed: Boolean = false,
                      completionHandler: ADATransactionsHandle) {
@@ -149,47 +159,44 @@ class Gada {
                     if (addressUsed.isNotEmpty()) {
                         val params = JsonObject()
                         params.add("addresses", addressUsed.toJsonArray())
-                        params.addProperty("dateFrom", dateFrom)
+                        params.addProperty("untilBlock", currentBestBlock.blockHash)
                         val call = apiService.transactions(params)
                         call.enqueue(object : Callback<JsonElement> {
                             override fun onResponse(call: Call<JsonElement>, response: Response<JsonElement>) {
+//                            override fun onResponse(call: Call<JsonElement>, response: Response<List<ADATransaction>>) {
                                 val errBody = response.errorBody()
                                 if (errBody != null) {
                                     completionHandler.completionHandler(transJoin, null)
                                 } else {
-                                    val body = response.body()
-                                    if ((body != null) && body.isJsonArray) {
-                                        val trans = ADATransaction.parser(body.asJsonArray)
-                                        trans.forEach { tran ->
-                                            val outs = tran.outputs
-                                            val ins = tran.inputs
-                                            tran.fee = ins.map { it.value }.sum() - outs.map { it.value }.sum()
-                                            val inputsFilter = tran.inputs.filter(addressUsed)
-                                            val outputsFilter = tran.outputs.filter(addressUsed)
-                                            val outputsexclude = tran.outputs.exclude(addressUsed)
-                                            if (inputsFilter.isNotEmpty()) {
-                                                tran.inputs = inputsFilter
-                                                tran.outputs = when (outputsexclude.isNotEmpty()) {
-                                                    true -> outputsexclude
-                                                    false -> outputsFilter
-                                                }
-                                            } else if (outputsFilter.isNotEmpty()) {
-                                                tran.outputs = outputsFilter
-                                            }
-                                            tran.amount = tran.outputs.map { it.value }.sum()
-                                        }
-                                        trans.sortByDescending { it.lastUpdate }
-                                        val sumTrans = arrayOf<ADATransaction>().plus(trans).plus(transJoin)
-                                        if (trans.size != 20) {
-                                            completionHandler.completionHandler(sumTrans.distinctBy { it.transactionID }
-                                                    .filter { it.state.toLowerCase() != "failed" }.toTypedArray(), null)
-                                        } else {
-                                            val last = sumTrans.first()
-                                            val newDateFrom = last.lastUpdate.toDateString()
-                                            transactions(addressUsed, newDateFrom, sumTrans, true, completionHandler)
-                                        }
+                                    val gson = Gson()
+                                    val transactions = gson.fromJson(response.body().toString(), Array<ADATransaction>::class.java)
+
+//                                    val trans = response.body()
+                                    transactions.forEach { tran ->
+                                        val outs = tran.outputs
+                                        val ins = tran.inputs
+                                        tran.fee = ins.map { it.value }.sum() - outs.map { it.value }.sum()
+//                                        val inputsFilter = tran.inputs.filter(addressUsed)
+//                                        val outputsFilter = tran.outputs.filter(addressUsed)
+//                                        val outputsexclude = tran.outputs.exclude(addressUsed)
+//                                        if (inputsFilter.isNotEmpty()) {
+//                                            tran.inputs = inputsFilter.toTypedArray()
+//                                            tran.outputs = when (outputsexclude.isNotEmpty()) {
+//                                                true -> outputsexclude
+//                                                false -> outputsFilter.toTypedArray()
+//                                            }
+//                                        } else if (outputsFilter.isNotEmpty()) {
+//                                            tran.outputs = outputsFilter.toTypedArray()
+//                                        }
+                                        tran.amount = tran.outputs.map { it.value }.sum()
+                                    }
+                                    transactions.sortByDescending { it.lastUpdate() }
+                                    val sumTrans = arrayOf<ADATransaction>().plus(transactions).plus(transJoin)
+                                    if (transactions.size != 20) {
+                                        completionHandler.completionHandler(sumTrans.distinctBy { it.transactionID }
+                                                .filter { it.state.toLowerCase() != "failed" }.toTypedArray(), null)
                                     } else {
-                                        completionHandler.completionHandler(transJoin, null)
+                                        transactions(addressUsed, sumTrans, true, completionHandler)
                                     }
                                 }
                             }
@@ -420,6 +427,30 @@ class Gada {
         })
     }
 
+    fun bestblock(completionHandler: ADACurrentBlockHandle) {
+        val call = apiService.bestblock()
+        call.enqueue(object : Callback<JsonElement> {
+            override fun onResponse(call: Call<JsonElement>, response: Response<JsonElement>) {
+                val errBody = response.errorBody()
+                if ((errBody != null)) {
+                    val js = JSONObject(errBody.string())
+                    val msg = when (js.has("message")) {
+                        true -> js.get("message").toString()
+                        false -> "ERROR"
+                    }
+                    completionHandler.completionHandler(null, msg)
+                } else {
+                    val gson = Gson()
+                    currentBestBlock = gson.fromJson(response.body().toString(), CardanoCurrentBestBlock::class.java)
+                    completionHandler.completionHandler(currentBestBlock, "")
+                }
+            }
+
+            override fun onFailure(call: Call<JsonElement>, t: Throwable) {
+                completionHandler.completionHandler(null, t.localizedMessage)
+            }
+        })
+    }
 }
 
 private fun Array<String>.toJsonArray(): JsonArray {
