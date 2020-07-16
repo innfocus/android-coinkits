@@ -68,7 +68,7 @@ fun Array<ADATransactionInOut>.exclude(addresses: Array<String>): Array<ADATrans
     return filter { !converted.contains(it.address.toLowerCase())}.toTypedArray()
 }
 
-fun Array<ADATransactionInOut>.filter(addresses: Array<String>): Array<ADATransactionInOut> {
+fun Array<ADATransactionInOut>.filterAddress(addresses: Array<String>): Array<ADATransactionInOut> {
     val converted = addresses.map {it.toLowerCase()}
     return filter { converted.contains(it.address.toLowerCase())}.toTypedArray()
 }

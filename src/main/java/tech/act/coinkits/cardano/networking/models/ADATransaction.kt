@@ -18,6 +18,12 @@ class ADATransaction : Serializable {
     @SerializedName("tx_state")
     val state: String = ""
 
+    @SerializedName("block_num")
+    val blockNum: String = ""
+
+    @SerializedName("block_hash")
+    val blockHash: String = ""
+
     @SerializedName("inputs")
     lateinit var inputs: Array<ADATransactionInOut>
 

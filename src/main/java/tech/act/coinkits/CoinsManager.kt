@@ -428,6 +428,9 @@ class CoinsManager : ICoinsManager {
                         Gada.shared.addressUsed(adds.toTypedArray(), completionHandler = object : ADAAddressUsedHandle {
                             override fun completionHandler(addressUsed: Array<String>, err: Throwable?) {
                                 Gada.shared.transactions(addressUsed,
+                                        currentBestBlock.blockHash,
+                                        null,
+                                        null,
                                         ignoreAddsUsed = true,
                                         completionHandler = object : ADATransactionsHandle {
                                             override fun completionHandler(transactions: Array<ADATransaction>?, err: Throwable?) {

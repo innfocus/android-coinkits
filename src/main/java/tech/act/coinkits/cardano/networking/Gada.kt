@@ -21,9 +21,9 @@ import tech.act.coinkits.cardano.networking.models.ADATransaction
 import tech.act.coinkits.cardano.networking.models.ADAUnspentTransaction
 import tech.act.coinkits.cardano.networking.models.CardanoCurrentBestBlock
 import tech.act.coinkits.exclude
+import tech.act.coinkits.filterAddress
 import tech.act.coinkits.hdwallet.bip32.ACTPrivateKey
 import tech.act.coinkits.hdwallet.bip44.ACTAddress
-import tech.act.coinkits.hdwallet.core.helpers.toDateString
 
 
 class YOROIAPI {
@@ -35,6 +35,7 @@ class YOROIAPI {
         const val signed = "txs/signed"
         const val addressUsed = "v2/addresses/filterUsed"
         const val bestblock = "v2/bestblock"
+        const val TX_HISTORY_RESPONSE_LIMIT = 50
     }
 }
 
@@ -150,6 +151,9 @@ class Gada {
     }
 
     fun transactions(addresses: Array<String>,
+                     untilBlock: String,
+                     afterTx: String?,
+                     afterBlock: String?,
                      transJoin: Array<ADATransaction> = arrayOf(),
                      ignoreAddsUsed: Boolean = false,
                      completionHandler: ADATransactionsHandle) {
@@ -159,44 +163,48 @@ class Gada {
                     if (addressUsed.isNotEmpty()) {
                         val params = JsonObject()
                         params.add("addresses", addressUsed.toJsonArray())
-                        params.addProperty("untilBlock", currentBestBlock.blockHash)
+                        params.addProperty("untilBlock", untilBlock)
+                        if (afterTx != null) {
+                            val after = JsonObject()
+                            after.addProperty("tx", afterTx)
+                            after.addProperty("block", afterBlock)
+                            params.add("after", after)
+                        }
                         val call = apiService.transactions(params)
                         call.enqueue(object : Callback<JsonElement> {
                             override fun onResponse(call: Call<JsonElement>, response: Response<JsonElement>) {
-//                            override fun onResponse(call: Call<JsonElement>, response: Response<List<ADATransaction>>) {
                                 val errBody = response.errorBody()
                                 if (errBody != null) {
                                     completionHandler.completionHandler(transJoin, null)
                                 } else {
                                     val gson = Gson()
                                     val transactions = gson.fromJson(response.body().toString(), Array<ADATransaction>::class.java)
-
-//                                    val trans = response.body()
                                     transactions.forEach { tran ->
                                         val outs = tran.outputs
                                         val ins = tran.inputs
                                         tran.fee = ins.map { it.value }.sum() - outs.map { it.value }.sum()
-//                                        val inputsFilter = tran.inputs.filter(addressUsed)
-//                                        val outputsFilter = tran.outputs.filter(addressUsed)
-//                                        val outputsexclude = tran.outputs.exclude(addressUsed)
-//                                        if (inputsFilter.isNotEmpty()) {
-//                                            tran.inputs = inputsFilter.toTypedArray()
-//                                            tran.outputs = when (outputsexclude.isNotEmpty()) {
-//                                                true -> outputsexclude
-//                                                false -> outputsFilter.toTypedArray()
-//                                            }
-//                                        } else if (outputsFilter.isNotEmpty()) {
-//                                            tran.outputs = outputsFilter.toTypedArray()
-//                                        }
+                                        val inputsFilter = tran.inputs.filterAddress(addressUsed)
+                                        val outputsFilter = tran.outputs.filterAddress(addressUsed)
+                                        val outputsExclude = tran.outputs.exclude(addressUsed)
+                                        if (inputsFilter.isNotEmpty()) {
+                                            tran.inputs = inputsFilter
+                                            tran.outputs = when (outputsExclude.isNotEmpty()) {
+                                                true -> outputsExclude
+                                                false -> outputsFilter
+                                            }
+                                        } else if (outputsFilter.isNotEmpty()) {
+                                            tran.outputs = outputsFilter
+                                        }
                                         tran.amount = tran.outputs.map { it.value }.sum()
                                     }
                                     transactions.sortByDescending { it.lastUpdate() }
                                     val sumTrans = arrayOf<ADATransaction>().plus(transactions).plus(transJoin)
-                                    if (transactions.size != 20) {
+                                    if (transactions.size < YOROIAPI.TX_HISTORY_RESPONSE_LIMIT) {
                                         completionHandler.completionHandler(sumTrans.distinctBy { it.transactionID }
                                                 .filter { it.state.toLowerCase() != "failed" }.toTypedArray(), null)
                                     } else {
-                                        transactions(addressUsed, sumTrans, true, completionHandler)
+                                        val last = sumTrans.first()
+                                        transactions(addressUsed, untilBlock, last.transactionID, last.blockHash, sumTrans, true, completionHandler)
                                     }
                                 }
                             }
