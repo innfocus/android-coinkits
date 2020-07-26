@@ -68,7 +68,7 @@ fun Array<ADATransactionInOut>.exclude(addresses: Array<String>): Array<ADATrans
     return filter { !converted.contains(it.address.toLowerCase())}.toTypedArray()
 }
 
-fun Array<ADATransactionInOut>.filter(addresses: Array<String>): Array<ADATransactionInOut> {
+fun Array<ADATransactionInOut>.filterAddress(addresses: Array<String>): Array<ADATransactionInOut> {
     val converted = addresses.map {it.toLowerCase()}
     return filter { converted.contains(it.address.toLowerCase())}.toTypedArray()
 }
@@ -84,9 +84,9 @@ fun ADATransaction.toTransactionData(addresses: Array<String>): TransationData {
     val oPs             = outputs.map{ it.address }.distinct()
     result.fromAddress  = iPs.joinToString(separator = "\n")
     result.toAddress    = oPs.joinToString(separator = "\n")
-    result.date         = time
-    result.amount       = amount/ ADACoin
-    result.fee          = fee   / ADACoin
+    result.date         = time()
+    result.amount       = (amount/ ADACoin).toFloat()
+    result.fee          = (fee   / ADACoin).toFloat()
     result.coin         = ACTCoin.Cardano
     result.isSend       = addresses.filter { result.fromAddress.contains(it, ignoreCase = true)}.isNotEmpty()
     return result
