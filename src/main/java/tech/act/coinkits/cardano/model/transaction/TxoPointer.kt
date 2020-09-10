@@ -10,21 +10,22 @@ import java.io.ByteArrayOutputStream
 
 class TxoPointer(val txId: String, val index: Long) {
     fun serializer(): List<DataItem> {
-        val output      = ByteArrayOutputStream()
-        val utxoCbor    = CborBuilder().addArray().add(ByteString(txId.fromHexToByteArray())).add(UnsignedInteger(index)).end().build()
+        val output = ByteArrayOutputStream()
+        val utxoCbor = CborBuilder().addArray().add(ByteString(txId.fromHexToByteArray()))
+            .add(UnsignedInteger(index)).end().build()
         CborEncoder(output).encode(utxoCbor)
-        val tagged      = ByteString(output.toByteArray())
+        val tagged = ByteString(output.toByteArray())
         tagged.setTag(24)
-        return  CborBuilder().addArray().add(0).add(tagged).end().build()
+        return CborBuilder().addArray().add(0).add(tagged).end().build()
     }
 }
 
 fun Array<TxoPointer>.serializer(isChunk: Boolean = false): List<DataItem> {
     val ls = mutableListOf<DataItem>()
-    map { it.serializer()}.forEach {
+    map { it.serializer() }.forEach {
         ls.addAll(it)
     }
-    return when (isChunk) {
+    when (isChunk) {
         true -> {
             val rs = CborBuilder()
             ls.forEach {

@@ -11,13 +11,13 @@ class TxOut(val address: String, val value: Long) {
         return try {
             val addData = Base58.decode(address)
             val addCbor = CborDecoder.decode(addData)
-            val rs =  CborBuilder().addArray()
-            addCbor.forEach{
+            val rs = CborBuilder().addArray()
+            addCbor.forEach {
                 rs.add(it)
             }
             rs.add(value)
             rs.end().build()
-        }catch (e: CborException) {
+        } catch (e: CborException) {
             null
         }
     }
@@ -28,10 +28,10 @@ fun Array<TxOut>.serializer(isChunk: Boolean = false): List<DataItem> {
     forEach {
         val item = it.serializer()
         if (item != null) {
-            ls.addAll(item!!)
+            ls.addAll(item)
         }
     }
-    return when(isChunk){
+    return when (isChunk) {
         true -> {
             val rs = CborBuilder()
             ls.forEach {

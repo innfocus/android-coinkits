@@ -10,19 +10,19 @@ class TxAux(val tx: Tx, val witness: Array<TxWitness>) {
 
     fun serializer(): List<DataItem> {
         val witnessCbor = witness.serializer()
-        val txCbor      = tx.serializer()
-        val rs          = CborBuilder().addArray()
+        val txCbor = tx.serializer()
+        val rs = CborBuilder().addArray()
         txCbor.forEach {
             rs.add(it)
         }
         witnessCbor.forEach {
             rs.add(it)
         }
-        return  rs.end().build()
+        return rs.end().build()
     }
 
     fun base64(): String {
-        return  Base64.encodeToString(encode(), 2)
+        return Base64.encodeToString(encode(), 2)
     }
 
     fun encode(): ByteArray {
