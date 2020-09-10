@@ -10,11 +10,8 @@ class TxOut(val address: String, val value: Long) {
     fun serializer(): List<DataItem>? {
         return try {
             val addData = Base58.decode(address)
-            val addCbor = CborDecoder.decode(addData)
             val rs = CborBuilder().addArray()
-            addCbor.forEach {
-                rs.add(it)
-            }
+            rs.add(addData)
             rs.add(value)
             rs.end().build()
         } catch (e: CborException) {
