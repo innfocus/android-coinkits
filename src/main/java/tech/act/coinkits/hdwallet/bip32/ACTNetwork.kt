@@ -34,7 +34,7 @@ enum class ACTCoin {
         override fun supportMemo()      = false
         override fun nameCoin()         = "Ethereum"
         override fun symbolName()       = "ETH"
-        override fun minimumValue()     = 0.00001
+        override fun minimumValue()     = 0.0001
         override fun unit()             = BigDecimal(1000000000000000000)
         override fun regex()            = "(?:((0x|0X|)[a-fA-F0-9]{40,}))"
         override fun algorithm()        = Algorithm.Secp256k1
@@ -47,7 +47,7 @@ enum class ACTCoin {
         override fun supportMemo()      = false
         override fun nameCoin()         = "Cardano"
         override fun symbolName()       = "ADA"
-        override fun minimumValue()     = 0.1
+        override fun minimumValue()     = 1.0
         override fun unit()             = BigDecimal(1000000)
         override fun regex()            = "(?:([a-km-zA-HJ-NP-Z1-9]{25,}))"
         override fun algorithm()        = Algorithm.Ed25519
