@@ -4,12 +4,9 @@ import android.util.Log
 import co.nstant.`in`.cbor.CborBuilder
 import co.nstant.`in`.cbor.CborEncoder
 import co.nstant.`in`.cbor.model.DataItem
-import co.nstant.`in`.cbor.model.Map
-import co.nstant.`in`.cbor.model.UnsignedInteger
 import tech.act.coinkits.hdwallet.core.helpers.blake2b
 import tech.act.coinkits.hdwallet.core.helpers.toHexString
 import java.io.ByteArrayOutputStream
-import java.util.*
 
 class Tx {
     private var inputs: MutableList<TxoPointer> = mutableListOf()
@@ -48,21 +45,27 @@ class Tx {
     fun serializer(): List<DataItem> {
         val rs = CborBuilder().addMap()
 
-        var baos = ByteArrayOutputStream()
-        val insCbor = inputs.toTypedArray().serializer(false)
-        CborEncoder(baos).encode(insCbor)
-        var byteData = baos.toByteArray()
-//        Log.d("TEST_TX", "input body")
-//        Log.d("TEST_TX", byteData.toUByteArray().contentToString())
-        rs.put(0, byteData)
+        val inputArray = rs.putArray(0)
+        val ls = mutableListOf<DataItem>()
+        inputs.map { it.serializer() }.forEach {
+            ls.addAll(it)
+        }
+        ls.forEach {
+            inputArray.add(it)
+        }
 
-        baos = ByteArrayOutputStream()
-        val outsCbor = outputs.toTypedArray().serializer(false)
-        CborEncoder(baos).encode(outsCbor)
-        byteData = baos.toByteArray()
-//        Log.d("TEST_TX", "output body")
-//        Log.d("TEST_TX", byteData.toUByteArray().contentToString())
-        rs.put(1, byteData)
+
+        val outputArray = rs.putArray(1)
+        val lso = mutableListOf<DataItem>()
+        outputs.forEach {
+            val item = it.serializer()
+            if (item != null) {
+                lso.addAll(item)
+            }
+        }
+        lso.forEach {
+            outputArray.add(it)
+        }
 
         rs.put(2, this.fee)
         rs.put(3, this.ttl)
@@ -73,29 +76,6 @@ class Tx {
     fun encode(): ByteArray {
         val baos = ByteArrayOutputStream()
         CborEncoder(baos).nonCanonical().encode(this.serializer())
-
-//        val builder = CborBuilder().addArray()
-//        builder.add(UnsignedInteger(0))
-//        val insCbor = inputs.toTypedArray().serializer(true)
-//        val outsCbor = outputs.toTypedArray().serializer(true)
-//        insCbor.forEach {
-//            builder.add(it)
-//        }
-//        builder.add(UnsignedInteger(1))
-////        builder.startArray()
-//        outsCbor.forEach {
-//            builder.add(it)
-//        }
-//        builder.add(UnsignedInteger(2))
-//        builder.add(this.fee)
-//        builder.add(UnsignedInteger(2))
-//        builder.add(this.ttl)
-//        val output = ByteArrayOutputStream()
-//        CborEncoder(output).encode(builder.end().add(Map(4)).build())
-//        val test = byteArrayOf(0xa0.toByte()) + output.toByteArray()
-//        Log.d("TEST_TX", "tx body test")
-//        Log.d("TEST_TX", test.toUByteArray().contentToString())
-
         val byteData = baos.toByteArray()
 
         Log.d("TEST_TX", "tx body")
