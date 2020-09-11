@@ -6,7 +6,12 @@ import co.nstant.`in`.cbor.model.ByteString
 import co.nstant.`in`.cbor.model.DataItem
 import java.io.ByteArrayOutputStream
 
-class TxWitness(private val extendedPublicKey: ByteArray, private val signature: ByteArray) {
+class TxWitness(
+    private val extendedPublicKey: ByteArray,
+    private val signature: ByteArray,
+    private val chainCode: ByteArray,
+    private val attributes: ByteArray
+) {
 
     fun serializer(): List<DataItem> {
         val output = ByteArrayOutputStream()

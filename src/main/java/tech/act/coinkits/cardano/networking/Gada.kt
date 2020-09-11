@@ -392,7 +392,8 @@ class Gada {
                                 Log.d("TEST_TX", txId)
                                 val inWitnesses =
                                     TxWitnessBuilder.builder(txId, prvKeyBytes, chainCodes)
-                                val txAux = TxAux(tx, inWitnesses)
+                                val witnessSet = TransactionWitnessSet(inWitnesses)
+                                val txAux = TxAux(tx, witnessSet)
 
                                 completionHandler.completionHandler(txAux, "")
                             } else {

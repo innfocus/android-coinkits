@@ -4,12 +4,17 @@ import android.util.Base64
 import co.nstant.`in`.cbor.CborBuilder
 import co.nstant.`in`.cbor.CborEncoder
 import co.nstant.`in`.cbor.model.DataItem
+import co.nstant.`in`.cbor.model.SimpleValue
 import java.io.ByteArrayOutputStream
 
-class TxAux(val tx: Tx, val witness: Array<TxWitness>) {
+class TxAux(val tx: Tx, private val witnessSet: TransactionWitnessSet) {
+
+//    body: &TransactionBody
+//    witness_set: &TransactionWitnessSet
+//    metadata: Option<TransactionMetadata>
 
     fun serializer(): List<DataItem> {
-        val witnessCbor = witness.serializer()
+        val witnessCbor = witnessSet.serializer()
         val txCbor = tx.serializer()
         val rs = CborBuilder().addArray()
         txCbor.forEach {
@@ -18,6 +23,7 @@ class TxAux(val tx: Tx, val witness: Array<TxWitness>) {
         witnessCbor.forEach {
             rs.add(it)
         }
+        rs.add(SimpleValue.NULL)
         return rs.end().build()
     }
 
@@ -27,7 +33,7 @@ class TxAux(val tx: Tx, val witness: Array<TxWitness>) {
 
     fun encode(): ByteArray {
         val output = ByteArrayOutputStream()
-        CborEncoder(output).encode(witness.serializer())
+        CborEncoder(output).encode(witnessSet.serializer())
         return byteArrayOf(0x82.toByte()) + tx.encode() + output.toByteArray()
     }
 }
