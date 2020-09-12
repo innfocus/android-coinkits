@@ -14,12 +14,13 @@ class TxAux(val tx: Tx, private val witnessSet: TransactionWitnessSet) {
 //    metadata: Option<TransactionMetadata>
 
     fun serializer(): List<DataItem> {
-        val witnessCbor = witnessSet.serializer()
-        val txCbor = tx.serializer()
         val rs = CborBuilder().addArray()
+        val txCbor = tx.serializer()
         txCbor.forEach {
             rs.add(it)
         }
+
+        val witnessCbor = witnessSet.serializer()
         witnessCbor.forEach {
             rs.add(it)
         }
@@ -32,8 +33,8 @@ class TxAux(val tx: Tx, private val witnessSet: TransactionWitnessSet) {
     }
 
     fun encode(): ByteArray {
-        val output = ByteArrayOutputStream()
-        CborEncoder(output).encode(witnessSet.serializer())
-        return byteArrayOf(0x82.toByte()) + tx.encode() + output.toByteArray()
+        val baos = ByteArrayOutputStream()
+        CborEncoder(baos).nonCanonical().encode(this.serializer())
+        return baos.toByteArray()
     }
 }

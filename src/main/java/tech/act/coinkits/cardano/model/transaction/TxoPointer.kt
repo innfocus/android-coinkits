@@ -13,27 +13,3 @@ class TxoPointer(private val txId: String, val index: Long) {
         return utxoCbor
     }
 }
-
-fun Array<TxoPointer>.serializer(isChunk: Boolean = false): List<DataItem> {
-    val ls = mutableListOf<DataItem>()
-    map { it.serializer() }.forEach {
-        ls.addAll(it)
-    }
-    when (isChunk) {
-        true -> {
-            val rs = CborBuilder()
-            ls.forEach {
-                rs.add(it)
-            }
-            return rs.build()
-        }
-        false -> {
-            val rs = CborBuilder().addArray()
-            ls.forEach {
-                rs.add(it)
-            }
-            return rs.end().build()
-        }
-    }
-
-}
