@@ -351,12 +351,14 @@ class Gada {
 
                                 val netFee = networkFee * ADACoin
                                 val amountSend = amount * ADACoin
-                                val change = (total - amountSend - netFee - serFee).toLong()
+                                var change = (total - amountSend - netFee - serFee).toLong()
                                 val tx = Tx()
                                 // minimum_utxo_val
                                 if (change > 1000000) {
                                     val out1 = TxOut(fromAddress.rawAddressString(), change)
                                     tx.addOutput(out1)
+                                } else {
+                                    change = 0
                                 }
 
                                 val out2 = TxOut(toAddressStr, amountSend.toLong())
