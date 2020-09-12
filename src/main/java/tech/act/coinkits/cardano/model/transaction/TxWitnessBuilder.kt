@@ -19,7 +19,7 @@ class TxWitnessBuilder {
                         when ((prvKeys[i].size == 64) and (chainCodes[i].size == 32)) {
                             true -> {
                                 val pub = CarPublicKey.derive(prvKeys[i])
-                                val xPub = pub.bytes() + chainCodes[i]
+                                val xPub = pub.bytes()
                                 val pairKey = CarKeyPair(pub.bytes(), prvKeys[i])
                                 val signature = pairKey.sign(txId.fromHexToByteArray())
                                 val witness = TxWitness(

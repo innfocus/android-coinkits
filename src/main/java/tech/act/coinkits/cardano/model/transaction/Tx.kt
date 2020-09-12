@@ -1,6 +1,5 @@
 package tech.act.coinkits.cardano.model.transaction
 
-import android.util.Log
 import co.nstant.`in`.cbor.CborBuilder
 import co.nstant.`in`.cbor.CborEncoder
 import co.nstant.`in`.cbor.model.DataItem
@@ -76,10 +75,6 @@ class Tx {
     fun encode(): ByteArray {
         val baos = ByteArrayOutputStream()
         CborEncoder(baos).nonCanonical().encode(this.serializer())
-        val byteData = baos.toByteArray()
-
-        Log.d("TEST_TX", "tx body")
-        Log.d("TEST_TX", byteData.toUByteArray().contentToString())
-        return byteData
+        return baos.toByteArray()
     }
 }
