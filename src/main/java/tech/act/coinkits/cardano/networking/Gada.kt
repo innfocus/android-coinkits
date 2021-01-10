@@ -254,6 +254,7 @@ class Gada {
         serAddressStr: String,
         minerFee: Double,
         minFee: Double,
+        serviceFee: Double,
         completionHandler: ADAEstimateFeeHandle
     ) {
         createTxAux(prvKeys,
@@ -263,7 +264,7 @@ class Gada {
             serAddressStr,
             0.0001,
             0.0001,
-            0.0001,
+                serviceFee,
             object : ADACreateTxAuxHandle {
                 override fun completionHandler(txAux: TxAux?, errStr: String) {
                     if (txAux != null) {
