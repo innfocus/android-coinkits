@@ -5,20 +5,21 @@ import co.nstant.`in`.cbor.CborEncoder
 import co.nstant.`in`.cbor.model.DataItem
 import java.io.ByteArrayOutputStream
 
-class TxWitness(
-    private val extendedPublicKey: ByteArray,
-    private val signature: ByteArray,
-    private val chainCode: ByteArray,
-    private val attributes: ByteArray
-) {
+class TransactionWitnessSet(val bootstraps: Array<TxWitness>) {
 
     fun serializer(): List<DataItem> {
-        val witness = CborBuilder().addArray()
-        witness.add(extendedPublicKey)
-        witness.add(signature)
-        witness.add(chainCode)
-        witness.add(attributes)
-        return witness.end().build()
+        val rs = CborBuilder().addMap()
+
+        val inputArray = rs.putArray(2)
+        val ls = mutableListOf<DataItem>()
+        bootstraps.map { it.serializer() }.forEach {
+            ls.addAll(it)
+        }
+        ls.forEach {
+            inputArray.add(it)
+        }
+
+        return rs.end().build()
     }
 
     fun encode(): ByteArray {
@@ -26,5 +27,4 @@ class TxWitness(
         CborEncoder(baos).nonCanonical().encode(this.serializer())
         return baos.toByteArray()
     }
-
 }

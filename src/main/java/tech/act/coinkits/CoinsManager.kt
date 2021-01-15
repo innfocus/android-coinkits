@@ -60,6 +60,7 @@ interface ICoinsManager {
     fun estimateFee(serAddressStr: String,
                     paramFee: Double,
                     networkMinFee: Double = 0.0,
+                    serviceFee: Double = 0.0,
                     network: ACTNetwork,
                     completionHandler: EstimateFeeHandle)
 }
@@ -201,6 +202,7 @@ class CoinsManager : ICoinsManager {
     override fun estimateFee(serAddressStr: String,
                              paramFee: Double,
                              networkMinFee: Double,
+                             serviceFee: Double,
                              network: ACTNetwork,
                              completionHandler: EstimateFeeHandle) {
         when (network.coin) {
@@ -226,6 +228,7 @@ class CoinsManager : ICoinsManager {
                             serAddressStr,
                             paramFee,
                             networkMinFee,
+                            serviceFee,
                             object : ADAEstimateFeeHandle {
                                 override fun completionHandler(estimateFee: Double, errStr: String) {
                                     completionHandler.completionHandler(estimateFee, errStr)

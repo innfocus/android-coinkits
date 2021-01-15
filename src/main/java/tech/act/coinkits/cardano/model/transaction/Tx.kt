@@ -2,15 +2,20 @@ package tech.act.coinkits.cardano.model.transaction
 
 import co.nstant.`in`.cbor.CborBuilder
 import co.nstant.`in`.cbor.CborEncoder
-import co.nstant.`in`.cbor.model.*
-import co.nstant.`in`.cbor.model.Map
+import co.nstant.`in`.cbor.model.DataItem
 import tech.act.coinkits.hdwallet.core.helpers.blake2b
 import tech.act.coinkits.hdwallet.core.helpers.toHexString
 import java.io.ByteArrayOutputStream
 
 class Tx {
-    private var inputs  : MutableList<TxoPointer>   = mutableListOf()
-    private var outputs : MutableList<TxOut>        = mutableListOf()
+    private var inputs: MutableList<TxoPointer> = mutableListOf()
+    private var outputs: MutableList<TxOut> = mutableListOf()
+    private var fee: Long = 0
+    private var ttl: Long = 0
+    private var certs: String? = null
+    private var withdrawals: String? = null
+    private var update: String? = null
+    private var metadataHash: String? = null
 
     fun getID(): String {
         return encode().blake2b(32).toHexString()
@@ -24,38 +29,52 @@ class Tx {
         outputs.add(output)
     }
 
+    fun setFee(fee: Long) {
+        this.fee = fee
+    }
+
+    fun setTtl(ttl: Long) {
+        this.ttl = ttl
+    }
+
     fun getOutTotal(): Long {
         return outputs.map { it.value }.sum()
     }
 
     fun serializer(): List<DataItem> {
-        val rs          = CborBuilder().addArray()
-        val insCbor     = inputs.toTypedArray().serializer()
-        val outsCbor    = outputs.toTypedArray().serializer()
-        insCbor.forEach {
-            rs.add(it)
+        val rs = CborBuilder().addMap()
+
+        val inputArray = rs.putArray(0)
+        val ls = mutableListOf<DataItem>()
+        inputs.map { it.serializer() }.forEach {
+            ls.addAll(it)
         }
-        outsCbor.forEach{
-            rs.add(it)
+        ls.forEach {
+            inputArray.add(it)
         }
-        rs.add(Map(0))
+
+
+        val outputArray = rs.putArray(1)
+        val lso = mutableListOf<DataItem>()
+        outputs.forEach {
+            val item = it.serializer()
+            if (item != null) {
+                lso.addAll(item)
+            }
+        }
+        lso.forEach {
+            outputArray.add(it)
+        }
+
+        rs.put(2, this.fee)
+        rs.put(3, this.ttl)
+
         return rs.end().build()
     }
 
-    fun encode(): ByteArray{
-        val builder   = CborBuilder().startArray()
-        val insCbor     = inputs.toTypedArray().serializer(true)
-        val outsCbor    = outputs.toTypedArray().serializer(true)
-        insCbor.forEach {
-            builder.add(it)
-        }
-        builder.end()
-        builder.startArray()
-        outsCbor.forEach{
-            builder.add(it)
-        }
-        val output = ByteArrayOutputStream()
-        CborEncoder(output).encode(builder.end().add(Map(0)).build())
-        return byteArrayOf(0x83.toByte()) + output.toByteArray()
+    fun encode(): ByteArray {
+        val baos = ByteArrayOutputStream()
+        CborEncoder(baos).nonCanonical().encode(this.serializer())
+        return baos.toByteArray()
     }
 }
