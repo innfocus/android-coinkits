@@ -127,29 +127,14 @@ class Gada {
         addresses: Array<String>,
         completionHandler: ADABalanceHandle
     ) {
-        val params = JsonObject()
-        params.add("addresses", addresses.toJsonArray())
-        val call = apiService.getBalance(params)
-        call.enqueue(object : Callback<JsonObject> {
-            override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                val body = response.body()
-                if ((body != null) && (body.get("sum") != null) && !body.get("sum").isJsonNull) {
-                    try {
-                        val sum = (body.get("sum").asString.toLongOrNull()
-                            ?: -1).toDouble() / ADACoin
-                        completionHandler.completionHandler(sum, null)
-                    } catch (e: ClassCastException) {
-                        completionHandler.completionHandler(-1.0, null)
-                    } catch (e: IllegalStateException) {
-                        completionHandler.completionHandler(-1.0, null)
-                    }
-                } else {
-                    completionHandler.completionHandler(-1.0, null)
-                }
-            }
-
-            override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                completionHandler.completionHandler(0.0, t)
+        unspentOutputs(addresses, object : ADAUnspentOutputsHandle {
+            override fun completionHandler(
+                unspentOutputs: Array<ADAUnspentTransaction>,
+                err: Throwable?
+            ) {
+                val total = unspentOutputs.map { it.amount }.sum()
+                val sum = total.toDouble() / ADACoin
+                completionHandler.completionHandler(sum, null)
             }
         })
     }
