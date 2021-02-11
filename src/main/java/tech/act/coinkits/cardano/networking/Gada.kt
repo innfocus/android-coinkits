@@ -494,7 +494,9 @@ class Gada {
                         true -> js.get("message").toString()
                         false -> errBody.string()
                     }
-                    completionHandler.completionHandler(txId, false, msg)
+                    val body = response.body().toString()
+                    val errorBodyMsg = errBody.charStream().readText()
+                    completionHandler.completionHandler(txId, false, "$msg - Error body: $errorBodyMsg - Body: $body - Tx: $signedTx - TxID: $txId")
                 } else {
                     completionHandler.completionHandler(txId, true, "")
                 }
