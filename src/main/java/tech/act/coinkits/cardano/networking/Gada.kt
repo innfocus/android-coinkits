@@ -492,11 +492,9 @@ class Gada {
                     val js = JSONObject(errBody.string())
                     val msg = when (js.has("message")) {
                         true -> js.get("message").toString()
-                        false -> errBody.string()
+                        false -> js.toString()
                     }
-                    val body = response.body().toString()
-                    val errorBodyMsg = errBody.charStream().readText()
-                    completionHandler.completionHandler(txId, false, "$msg - Error body: $errorBodyMsg - Body: $body - Tx: $signedTx - TxID: $txId")
+                    completionHandler.completionHandler(txId, false, "$msg - Tx: $signedTx - TxID: $txId")
                 } else {
                     completionHandler.completionHandler(txId, true, "")
                 }
