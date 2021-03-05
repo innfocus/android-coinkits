@@ -315,23 +315,27 @@ class Gada {
                 if (err == null) {
                     unspentOutputs(addressUsed, object : ADAUnspentOutputsHandle {
                         override fun completionHandler(
-                            unspentOutputs: Array<ADAUnspentTransaction>,
-                            err: Throwable?
+                                unspentOutputs: Array<ADAUnspentTransaction>,
+                                err: Throwable?
                         ) {
                             if (err == null) {
                                 var mapKeys = arrayOf<MapKeys>()
                                 for (i in prvKeys.indices) {
                                     if (addressUsed.contains(unspentAddresses[i])) {
                                         mapKeys =
-                                            mapKeys.plus(MapKeys(prvKeys[i], unspentAddresses[i]))
+                                                mapKeys.plus(MapKeys(prvKeys[i], unspentAddresses[i]))
                                     }
                                 }
 
                                 var prvKeyBytes = arrayOf<ByteArray>()
                                 var chainCodes = arrayOf<ByteArray>()
                                 val total = unspentOutputs.map { it.amount }.sum()
+                                var walletServiceFee = serviceFee
+                                if (serviceFee > 0 && serviceFee < 1) {
+                                    walletServiceFee = 1.0
+                                }
                                 val serFee = when (CarAddress.isValidAddress(serAddressStr)) {
-                                    true -> serviceFee * ADACoin
+                                    true -> walletServiceFee * ADACoin
                                     false -> 0.0
                                 }
 
@@ -366,7 +370,7 @@ class Gada {
                                     Log.d("TEST_TX", it.transationHash)
                                     Log.d("TEST_TX", it.transactionIdx.toString())
                                     val input =
-                                        TxoPointer(it.transationHash, it.transactionIdx.toLong())
+                                            TxoPointer(it.transationHash, it.transactionIdx.toLong())
                                     val add = it.receiver
 
                                     val keys = mapKeys.first { item -> item.address == add }
@@ -379,7 +383,7 @@ class Gada {
 
                                 Log.d("TEST_TX", txId)
                                 val inWitnesses =
-                                    TxWitnessBuilder.builder(txId, prvKeyBytes, chainCodes)
+                                        TxWitnessBuilder.builder(txId, prvKeyBytes, chainCodes)
                                 val witnessSet = TransactionWitnessSet(inWitnesses)
                                 val txAux = TxAux(tx, witnessSet)
 
