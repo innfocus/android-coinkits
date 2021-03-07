@@ -38,6 +38,7 @@ class YOROIAPI {
         const val addressUsed = "v2/addresses/filterUsed"
         const val bestblock = "v2/bestblock"
         const val TX_HISTORY_RESPONSE_LIMIT = 50
+        const val MIN_AMOUNT_PER_TX = 1000000.0
     }
 }
 
@@ -329,22 +330,40 @@ class Gada {
 
                                 var prvKeyBytes = arrayOf<ByteArray>()
                                 var chainCodes = arrayOf<ByteArray>()
-                                val total = unspentOutputs.map { it.amount }.sum()
-                                var walletServiceFee = serviceFee
-                                if (serviceFee > 0 && serviceFee < 1) {
-                                    walletServiceFee = 1.0
-                                }
-                                val serFee = when (CarAddress.isValidAddress(serAddressStr)) {
-                                    true -> walletServiceFee * ADACoin
+                                var walletServiceFee = when (CarAddress.isValidAddress(serAddressStr)) {
+                                    true -> serviceFee * ADACoin
                                     false -> 0.0
+                                }
+                                if (walletServiceFee > 0 && walletServiceFee < YOROIAPI.MIN_AMOUNT_PER_TX) {
+                                    walletServiceFee = YOROIAPI.MIN_AMOUNT_PER_TX
                                 }
 
                                 val netFee = networkFee * ADACoin
                                 val amountSend = amount * ADACoin
-                                var change = (total - amountSend - netFee - serFee).toLong()
+
+                                val totalAmount = amountSend + netFee + walletServiceFee
+                                var spentCoins = 0.0
+
                                 val tx = Tx()
+
+                                unspentOutputs.forEach {
+                                    if (it.amount > 0 && (spentCoins < totalAmount)) {
+                                        spentCoins += it.amount
+//                                        Log.d("TEST_TX", it.transationHash)
+//                                        Log.d("TEST_TX", it.transactionIdx.toString())
+                                        val input = TxoPointer(it.transationHash, it.transactionIdx.toLong())
+                                        val add = it.receiver
+
+                                        val keys = mapKeys.first { item -> item.address == add }
+                                        prvKeyBytes = prvKeyBytes.plus(keys.priKey.raw!!)
+                                        chainCodes = chainCodes.plus(keys.priKey.chainCode!!)
+                                        tx.addInput(input)
+                                    }
+                                }
+
+                                var change = (spentCoins - totalAmount).toLong()
                                 // minimum_utxo_val
-                                if (change > 1000000) {
+                                if (change >= YOROIAPI.MIN_AMOUNT_PER_TX) {
                                     val out1 = TxOut(fromAddress.rawAddressString(), change)
                                     tx.addOutput(out1)
                                 } else {
@@ -354,36 +373,20 @@ class Gada {
                                 val out2 = TxOut(toAddressStr, amountSend.toLong())
                                 tx.addOutput(out2)
 
-                                if (serFee > 0) {
-                                    val out3 = TxOut(serAddressStr, serFee.toLong())
+                                if (walletServiceFee > 0) {
+                                    val out3 = TxOut(serAddressStr, walletServiceFee.toLong())
                                     tx.addOutput(out3)
                                 }
 
-                                val fee = total - (amountSend + serFee + change)
+                                val fee = spentCoins - (amountSend + walletServiceFee + change)
 
                                 tx.setFee(fee.toLong())
-//                                tx.setTtl(8106815)
                                 tx.setTtl(getTimeSlot())
-
-                                unspentOutputs.forEach {
-
-                                    Log.d("TEST_TX", it.transationHash)
-                                    Log.d("TEST_TX", it.transactionIdx.toString())
-                                    val input =
-                                            TxoPointer(it.transationHash, it.transactionIdx.toLong())
-                                    val add = it.receiver
-
-                                    val keys = mapKeys.first { item -> item.address == add }
-                                    prvKeyBytes = prvKeyBytes.plus(keys.priKey.raw!!)
-                                    chainCodes = chainCodes.plus(keys.priKey.chainCode!!)
-                                    tx.addInput(input)
-                                }
 
                                 val txId = tx.getID()
 
-                                Log.d("TEST_TX", txId)
-                                val inWitnesses =
-                                        TxWitnessBuilder.builder(txId, prvKeyBytes, chainCodes)
+//                                Log.d("TEST_TX", txId)
+                                val inWitnesses = TxWitnessBuilder.builder(txId, prvKeyBytes, chainCodes)
                                 val witnessSet = TransactionWitnessSet(inWitnesses)
                                 val txAux = TxAux(tx, witnessSet)
 
