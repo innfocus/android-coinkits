@@ -21,7 +21,6 @@ import tech.act.coinkits.ripple.networking.Gxrp
 import tech.act.coinkits.ripple.networking.XRPBalanceHandle
 import tech.act.coinkits.ripple.networking.XRPSubmitTxtHandle
 import tech.act.coinkits.ripple.networking.XRPTransactionsHandle
-import kotlin.math.acos
 
 interface BalanceHandle {
     fun completionHandler(balance: Double, success: Boolean)
@@ -57,7 +56,8 @@ interface ICoinsManager {
                  networkMemo: MemoData? = null,
                  completionHandler: SendCoinHandle)
 
-    fun estimateFee(serAddressStr: String,
+    fun estimateFee(amount: Double,
+                    serAddressStr: String,
                     paramFee: Double,
                     networkMinFee: Double = 0.0,
                     serviceFee: Double = 0.0,
@@ -199,7 +199,8 @@ class CoinsManager : ICoinsManager {
         }
     }
 
-    override fun estimateFee(serAddressStr: String,
+    override fun estimateFee(amount: Double,
+                             serAddressStr: String,
                              paramFee: Double,
                              networkMinFee: Double,
                              serviceFee: Double,
@@ -225,6 +226,7 @@ class CoinsManager : ICoinsManager {
                             unspentAddresses,
                             addresses.first(),
                             addresses.first().rawAddressString(),
+                            amount,
                             serAddressStr,
                             paramFee,
                             networkMinFee,
@@ -316,11 +318,11 @@ class CoinsManager : ICoinsManager {
                     true -> {
                         val nw = networkManager[symbolName]
                         if (nw != null) {
-                            val keys: ACTHDWallet.Result = wallet!!.generatePrivateKeys(checkExt.count,
+                            val keys: ACTHDWallet.Result = wallet.generatePrivateKeys(checkExt.count,
                                     checkExt.fromIdx,
                                     checkIn.count,
                                     checkIn.fromIdx,
-                                    nw!!)
+                                    nw)
                             prvKeysManager[checkExt.keyName] = extPrvKeys.plus(keys.extKeys)
                             prvKeysManager[checkIn.keyName] = inPrvKeys.plus(keys.intKeys)
                             prvKeysManager[checkExt.keyName]!!.plus(prvKeysManager[checkIn.keyName]!!)

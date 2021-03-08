@@ -26,6 +26,7 @@ import tech.act.coinkits.filterAddress
 import tech.act.coinkits.hdwallet.bip32.ACTPrivateKey
 import tech.act.coinkits.hdwallet.bip44.ACTAddress
 import java.util.*
+import kotlin.math.max
 
 
 class YOROIAPI {
@@ -237,30 +238,30 @@ class Gada {
         unspentAddresses: Array<String>,
         fromAddress: ACTAddress,
         toAddressStr: String,
+        amount: Double,
         serAddressStr: String,
         minerFee: Double,
         minFee: Double,
         serviceFee: Double,
         completionHandler: ADAEstimateFeeHandle
     ) {
-        createTxAux(prvKeys,
-            unspentAddresses,
-            fromAddress,
-            toAddressStr,
-            serAddressStr,
-            0.0001,
-            0.0001,
-                serviceFee,
-            object : ADACreateTxAuxHandle {
-                override fun completionHandler(txAux: TxAux?, errStr: String) {
-                    if (txAux != null) {
-                        val estimateFee = (txAux.encode().size * minerFee + minFee) / ADACoin
-                        completionHandler.completionHandler(estimateFee, "")
-                    } else {
-                        completionHandler.completionHandler(0.0, errStr)
+        createTxAux(prvKeys = prvKeys,
+                unspentAddresses = unspentAddresses,
+                fromAddress = fromAddress,
+                toAddressStr = toAddressStr,
+                serAddressStr = serAddressStr,
+                amount = max(YOROIAPI.MIN_AMOUNT_PER_TX, amount),
+                serviceFee = serviceFee,
+                completionHandler = object : ADACreateTxAuxHandle {
+                    override fun completionHandler(txAux: TxAux?, errStr: String) {
+                        if (txAux != null) {
+                            val estimateFee = (txAux.encode().size * minerFee + minFee) / ADACoin
+                            completionHandler.completionHandler(estimateFee, "")
+                        } else {
+                            completionHandler.completionHandler(0.0, errStr)
+                        }
                     }
-                }
-            })
+                })
     }
 
     private data class MapKeys(val priKey: ACTPrivateKey, val address: String)
@@ -287,7 +288,6 @@ class Gada {
             object : ADACreateTxAuxHandle {
                 override fun completionHandler(txAux: TxAux?, errStr: String) {
                     if (txAux != null) {
-//                        completionHandler.completionHandler(txAux.tx.getID(), false, errStr)
                             sendTxAux(txAux.base64(), txAux.tx.getID(), object : ADASendTxAuxHandle {
                                 override fun completionHandler(transID: String, success: Boolean, errStr: String) {
                                     completionHandler.completionHandler(transID, success, errStr)
@@ -323,15 +323,14 @@ class Gada {
                                 var mapKeys = arrayOf<MapKeys>()
                                 for (i in prvKeys.indices) {
                                     if (addressUsed.contains(unspentAddresses[i])) {
-                                        mapKeys =
-                                                mapKeys.plus(MapKeys(prvKeys[i], unspentAddresses[i]))
+                                        mapKeys = mapKeys.plus(MapKeys(prvKeys[i], unspentAddresses[i]))
                                     }
                                 }
 
                                 var prvKeyBytes = arrayOf<ByteArray>()
                                 var chainCodes = arrayOf<ByteArray>()
                                 var walletServiceFee = when (CarAddress.isValidAddress(serAddressStr)) {
-                                    true -> serviceFee * ADACoin
+                                    true -> serviceFee
                                     false -> 0.0
                                 }
                                 if (walletServiceFee > 0 && walletServiceFee < YOROIAPI.MIN_AMOUNT_PER_TX) {
@@ -339,9 +338,8 @@ class Gada {
                                 }
 
                                 val netFee = networkFee * ADACoin
-                                val amountSend = amount * ADACoin
 
-                                val totalAmount = amountSend + netFee + walletServiceFee
+                                val totalAmount = amount + netFee + walletServiceFee
                                 var spentCoins = 0.0
 
                                 val tx = Tx()
@@ -370,7 +368,7 @@ class Gada {
                                     change = 0
                                 }
 
-                                val out2 = TxOut(toAddressStr, amountSend.toLong())
+                                val out2 = TxOut(toAddressStr, amount.toLong())
                                 tx.addOutput(out2)
 
                                 if (walletServiceFee > 0) {
@@ -378,7 +376,7 @@ class Gada {
                                     tx.addOutput(out3)
                                 }
 
-                                val fee = spentCoins - (amountSend + walletServiceFee + change)
+                                val fee = spentCoins - (amount + walletServiceFee + change)
 
                                 tx.setFee(fee.toLong())
                                 tx.setTtl(getTimeSlot())
