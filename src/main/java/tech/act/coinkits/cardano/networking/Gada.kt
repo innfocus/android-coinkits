@@ -337,8 +337,11 @@ class Gada {
                                     walletServiceFee = YOROIAPI.MIN_AMOUNT_PER_TX
                                 }
 
-                                val netFee = networkFee * ADACoin
-
+                                var netFee = networkFee * ADACoin
+                                // Network fee always > 0
+                                if (netFee <= 0) {
+                                    netFee = 0.12
+                                }
                                 val totalAmount = amount + netFee + walletServiceFee
                                 var spentCoins = 0.0
 
@@ -376,8 +379,11 @@ class Gada {
                                     tx.addOutput(out3)
                                 }
 
-                                val fee = spentCoins - (amount + walletServiceFee + change)
-
+                                var fee = spentCoins - (amount + walletServiceFee + change)
+                                // Network fee always > 0
+                                if (fee <= 0) {
+                                    fee = 0.12
+                                }
                                 tx.setFee(fee.toLong())
                                 tx.setTtl(getTimeSlot())
 
