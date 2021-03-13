@@ -364,6 +364,11 @@ class Gada {
 
                                 var change = (spentCoins - totalAmount).toLong()
                                 // minimum_utxo_val
+                                var availableAmount = amount
+                                if (change < 0) {
+                                    availableAmount += change
+                                    change = 0
+                                }
                                 if (change >= YOROIAPI.MIN_AMOUNT_PER_TX) {
                                     val out1 = TxOut(fromAddress.rawAddressString(), change)
                                     tx.addOutput(out1)
@@ -371,7 +376,7 @@ class Gada {
                                     change = 0
                                 }
 
-                                val out2 = TxOut(toAddressStr, amount.toLong())
+                                val out2 = TxOut(toAddressStr, availableAmount.toLong())
                                 tx.addOutput(out2)
 
                                 if (walletServiceFee > 0) {
@@ -379,7 +384,7 @@ class Gada {
                                     tx.addOutput(out3)
                                 }
 
-                                var fee = spentCoins - (amount + walletServiceFee + change)
+                                var fee = spentCoins - (availableAmount + walletServiceFee + change)
                                 // Network fee always > 0
                                 if (fee <= 0) {
                                     fee = 0.12
