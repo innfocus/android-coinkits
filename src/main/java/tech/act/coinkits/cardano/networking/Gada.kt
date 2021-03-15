@@ -26,6 +26,7 @@ import tech.act.coinkits.filterAddress
 import tech.act.coinkits.hdwallet.bip32.ACTPrivateKey
 import tech.act.coinkits.hdwallet.bip44.ACTAddress
 import java.util.*
+import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
 
@@ -338,12 +339,13 @@ class Gada {
                                     walletServiceFee = YOROIAPI.MIN_AMOUNT_PER_TX
                                 }
 
-                                var netFee = networkFee * ADACoin
+                                var netFee = ceil(networkFee * ADACoin)
                                 // Network fee always > 0
                                 if (netFee <= 0) {
                                     netFee = 0.12
                                 }
-                                val totalAmount = amount + netFee + walletServiceFee
+                                var availableAmount = floor(amount)
+                                val totalAmount = availableAmount + netFee + walletServiceFee
                                 var spentCoins = 0.0
 
                                 val tx = Tx()
@@ -365,7 +367,6 @@ class Gada {
 
                                 var change = (spentCoins - totalAmount).toLong()
                                 // minimum_utxo_val
-                                var availableAmount = amount
                                 if (change < 0) {
                                     availableAmount += change
                                     change = 0
