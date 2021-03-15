@@ -26,6 +26,7 @@ import tech.act.coinkits.filterAddress
 import tech.act.coinkits.hdwallet.bip32.ACTPrivateKey
 import tech.act.coinkits.hdwallet.bip44.ACTAddress
 import java.util.*
+import kotlin.math.floor
 import kotlin.math.max
 
 
@@ -330,7 +331,7 @@ class Gada {
                                 var prvKeyBytes = arrayOf<ByteArray>()
                                 var chainCodes = arrayOf<ByteArray>()
                                 var walletServiceFee = when (CarAddress.isValidAddress(serAddressStr)) {
-                                    true -> serviceFee
+                                    true -> floor(serviceFee)
                                     false -> 0.0
                                 }
                                 if (walletServiceFee > 0 && walletServiceFee < YOROIAPI.MIN_AMOUNT_PER_TX) {
