@@ -4,7 +4,7 @@ apply plugin: 'kotlin-android'
 android {
     compileSdkVersion 30
 
-    ext.kotlin_version = '1.4.31'
+    ext.kotlin_version = '1.4.32'
 
     defaultConfig {
         minSdkVersion 23
@@ -53,7 +53,7 @@ dependencies {
     implementation 'com.madgag.spongycastle:core:1.58.0.0'
     implementation 'com.madgag.spongycastle:prov:1.58.0.0'
     implementation 'org.whispersystems:curve25519-android:0.5.0'
-    implementation 'com.google.guava:guava:29.0-android'
+    implementation 'com.google.guava:guava:30.1.1-android'
     //network
     implementation 'com.google.code.gson:gson:2.8.6'
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
