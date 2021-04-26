@@ -148,7 +148,7 @@ class CoinsManager : ICoinsManager {
                         when (coin) {
                             ACTCoin.Centrality -> {
                                 val seed = getHDWallet()!!.calculateSeed(ACTNetwork(ACTCoin.Centrality, false))
-                                CentralityNetwork.shared.getPublicAddress(seed.toHex(), object : CennzGetAddressHandle {
+                                CentralityNetwork.shared.getPublicAddress(seed.toHexWithPrefix(), object : CennzGetAddressHandle {
                                     override fun completionHandler(address: String, error: String) {
                                         addressesManager[symbolName] = arrayOf(ACTAddress(address, ACTNetwork(ACTCoin.Centrality, false)))
                                     }

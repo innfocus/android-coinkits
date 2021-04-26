@@ -359,3 +359,6 @@ class CentralityNetwork {
 fun ByteArray.toHex(): String {
     return joinToString("") { "%02x".format(it) }
 }
+fun ByteArray.toHexWithPrefix(): String {
+    return "0x" + toHex()
+}
