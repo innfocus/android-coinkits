@@ -27,9 +27,17 @@ class ACTHDWallet @Throws(ACTBIP39Exception::class) constructor(mnemonic: String
     }
 
     fun calculateSeed(network: ACTNetwork): ByteArray {
-        return when(network.coin.algorithm()) {
+        return when (network.coin.algorithm()) {
             Algorithm.Secp256k1 -> {
                 seed
+            }
+            Algorithm.Sr25519 -> {
+                return ACTCryto.pbkdf2SHA512(
+                    entropy,
+                    "mnemonic".toByteArray(),
+                    2048,
+                    32
+                )
             }
             else -> {
                 ACTCryto.pbkdf2SHA512(byteArrayOf(), entropy, 4096, 96)

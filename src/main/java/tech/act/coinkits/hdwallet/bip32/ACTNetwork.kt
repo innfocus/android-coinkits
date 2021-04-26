@@ -9,10 +9,11 @@ enum class Change(val value: Int) {
 
 enum class Algorithm {
     Ed25519,
-    Secp256k1
+    Secp256k1,
+    Sr25519
 }
 
-enum class ACTCoin {
+enum class ACTCoin(val assetId: Int = 0) {
     Bitcoin{
         override fun feeDefault()       = 0.0
         override fun minimumAmount()    = 0.0
@@ -66,6 +67,33 @@ enum class ACTCoin {
         override fun algorithm()        = Algorithm.Secp256k1
         override fun baseApiUrl()       = ""
         override fun allowNewAddress()  = false
+    },
+    Centrality {
+        override fun feeDefault() = 15287.0
+        override fun minimumAmount() = 0.0
+        override fun supportMemo() = false
+        override fun nameCoin(): String {
+            return when (assetId) {
+                1 -> "CENNZnet"
+                2 -> "CPAY"
+                else -> "Centrality"
+            }
+        }
+
+        override fun symbolName(): String {
+            return when (assetId) {
+                1 -> "CENNZ"
+                2 -> "CPAY"
+                else -> "CENNZ"
+            }
+        }
+
+        override fun minimumValue() = 0.01
+        override fun unit() = BigDecimal(10000)
+        override fun regex() = "(?:(5|[a-km-zA-HJ-NP-Z1-9]{47,}))"
+        override fun algorithm() = Algorithm.Sr25519
+        override fun baseApiUrl() = ""
+        override fun allowNewAddress() = false
     };
     abstract fun nameCoin()         : String
     abstract fun symbolName()       : String
@@ -78,6 +106,9 @@ enum class ACTCoin {
     abstract fun minimumAmount()    : Double
     abstract fun supportMemo()      : Boolean
     abstract fun allowNewAddress()  : Boolean
+    fun assetId(): Int {
+        return assetId
+    }
 }
 
 class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {
@@ -88,6 +119,7 @@ class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {
             ACTCoin.Ethereum    -> 60
             ACTCoin.Cardano     -> 1815
             ACTCoin.Ripple      -> 144
+            ACTCoin.Centrality -> 392
         }
     }
 
@@ -133,6 +165,7 @@ class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {
             ACTCoin.Ethereum    -> if (chain == Change.Internal) 0  else 1
             ACTCoin.Cardano     -> if (chain == Change.Internal) 0  else 50
             ACTCoin.Ripple      -> if (chain == Change.Internal) 0  else 1
+            ACTCoin.Centrality  -> if (chain == Change.Internal) 0  else 1
         }
     }
 
@@ -142,6 +175,7 @@ class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {
             ACTCoin.Ethereum    -> if (chain == Change.Internal) 0 else 0
             ACTCoin.Cardano     -> if (chain == Change.Internal) 0 else 0
             ACTCoin.Ripple      -> if (chain == Change.Internal) 0 else 0
+            ACTCoin.Centrality -> if (chain == Change.Internal) 0 else 0
         }
     }
 
@@ -153,6 +187,7 @@ class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {
                     ACTCoin.Ethereum    -> "https://etherscan.io"
                     ACTCoin.Cardano     -> "https://cardanoexplorer.com"
                     ACTCoin.Ripple      -> "https://bithomp.com"
+                    ACTCoin.Centrality -> "https://uncoverexplorer.com"
                 }
             }
             true -> {
@@ -161,6 +196,7 @@ class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {
                     ACTCoin.Ethereum    -> "https://ropsten.etherscan.io"
                     ACTCoin.Cardano     -> "https://cardanoexplorer.com"
                     ACTCoin.Ripple      -> "https://test.bithomp.com"
+                    ACTCoin.Centrality -> "https://uncoverexplorer.com"
                 }
             }
         }
@@ -168,6 +204,9 @@ class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {
     }
 
     fun explorerForTX(): String {
-        return explorer() + if (coin == ACTCoin.Ripple) "/explorer/" else "/tx/"
+        return when (coin) {
+            ACTCoin.Centrality -> "https://uncoverexplorer.com/extrinsic/"
+            else -> explorer() + if (coin == ACTCoin.Ripple) "/explorer/" else "/tx/"
+        }
     }
 }

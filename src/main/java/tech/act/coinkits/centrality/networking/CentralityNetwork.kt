@@ -14,6 +14,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.POST
 import tech.act.coinkits.centrality.model.*
+import tech.act.coinkits.hdwallet.bip32.ACTCoin
 
 
 class CENNZ_API {
@@ -33,6 +34,10 @@ interface CennzGetBalanceHandle {
 
 interface CennzGetTransactionsHandle {
     fun completionHandler(transactions: List<CennzTransfer>, error: String)
+}
+
+interface CennzEstimateFeeHandle {
+    fun completionHandler(estimateFee: Long, error: String)
 }
 
 interface CennzSubmitExtrinsicHandle {
@@ -119,6 +124,10 @@ class CentralityNetwork {
         result[0] = second.toByte()
         result[1] = first.toByte()
         return result
+    }
+
+    fun calculateEstimateFee(completionHandler: CennzEstimateFeeHandle) {
+        completionHandler.completionHandler(ACTCoin.Centrality.feeDefault().toLong(), "")
     }
 
     fun submitExtrinsic(
