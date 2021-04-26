@@ -86,6 +86,9 @@ class ACTAddress {
                     ACTCoin.Cardano -> {
                         Base58.encode(r!!)
                     }
+                    else -> {
+                        Base58.encode(r!!)
+                    }
                 }
             }else{
                 return ""
