@@ -7,9 +7,7 @@ import tech.act.coinkits.bitcoin.networking.Gbtc
 import tech.act.coinkits.cardano.networking.*
 import tech.act.coinkits.cardano.networking.models.ADATransaction
 import tech.act.coinkits.cardano.networking.models.CardanoCurrentBestBlock
-import tech.act.coinkits.centrality.networking.CennzEstimateFeeHandle
-import tech.act.coinkits.centrality.networking.CennzGetBalanceHandle
-import tech.act.coinkits.centrality.networking.CentralityNetwork
+import tech.act.coinkits.centrality.networking.*
 import tech.act.coinkits.hdwallet.bip32.ACTCoin
 import tech.act.coinkits.hdwallet.bip32.ACTNetwork
 import tech.act.coinkits.hdwallet.bip32.ACTPrivateKey
@@ -147,9 +145,14 @@ class CoinsManager : ICoinsManager {
                 when (adds != null) {
                     true -> adds
                     false -> {
-                        when(coin) {
+                        when (coin) {
                             ACTCoin.Centrality -> {
-//                                val seed = getHDWallet()!!.calculateSeed(ACTNetwork(ACTCoin.Centrality, false))
+                                val seed = getHDWallet()!!.calculateSeed(ACTNetwork(ACTCoin.Centrality, false))
+                                CentralityNetwork.shared.getPublicAddress(seed.toHex(), object : CennzGetAddressHandle {
+                                    override fun completionHandler(address: String, error: String) {
+                                        addressesManager[symbolName] = arrayOf(ACTAddress(address, ACTNetwork(ACTCoin.Centrality, false)))
+                                    }
+                                })
                                 null
                             }
                             else -> {

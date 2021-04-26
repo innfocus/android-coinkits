@@ -24,12 +24,19 @@ class CENNZ_API {
         const val scanAccount = "/cennznet-explorer-api/api/scan/account"
         const val scanTransfers = "/cennznet-explorer-api/api/scan/transfers"
         const val scanExtrinsic = "/cennznet-explorer-api/api/scan/extrinsic"
+        const val localApiServer = "https://fgwallet.srsfc.com"
+        const val getAddressApi = "/cennz-address"
+        const val signMessageApi = "/cennz-sign"
         const val BASE_UNIT = 10000
     }
 }
 
 interface CennzGetBalanceHandle {
     fun completionHandler(balance: Long, error: String)
+}
+
+interface CennzGetAddressHandle {
+    fun completionHandler(address: String, error: String)
 }
 
 interface CennzGetTransactionsHandle {
@@ -42,6 +49,29 @@ interface CennzEstimateFeeHandle {
 
 interface CennzSubmitExtrinsicHandle {
     fun completionHandler(extrinsicHash: String, success: Boolean, error: String)
+}
+
+private interface CennzLocalApiServices {
+    @POST(CENNZ_API.getAddressApi)
+    fun getAddress(@Body params: JsonObject): Call<JsonElement>
+
+    @POST(CENNZ_API.signMessageApi)
+    fun signMessage(@Body params: JsonObject): Call<JsonElement>
+
+    companion object {
+        fun create(): CennzLocalApiServices {
+
+            val client = OkHttpClient.Builder()
+                    .build()
+
+            val retrofit = Retrofit.Builder()
+                    .baseUrl(CENNZ_API.localApiServer)
+                    .client(client)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build()
+            return retrofit.create(CennzLocalApiServices::class.java)
+        }
+    }
 }
 
 private interface CentralityApiServices {
@@ -81,13 +111,13 @@ private interface CentralityApiServices {
         fun create(): CentralityApiServices {
 
             val client = OkHttpClient.Builder()
-                .build()
+                    .build()
 
             val retrofit = Retrofit.Builder()
-                .baseUrl(CENNZ_API.server)
-                .client(client)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
+                    .baseUrl(CENNZ_API.server)
+                    .client(client)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build()
             return retrofit.create(CentralityApiServices::class.java)
         }
     }
@@ -106,6 +136,7 @@ class CentralityNetwork {
     }
 
     private val apiService = CentralityApiServices.create()
+    private val localApiServices = CennzLocalApiServices.create()
 
     //    0x6211cb => 6427083
     fun convertNumber(number: String): Long {
@@ -131,8 +162,8 @@ class CentralityNetwork {
     }
 
     fun submitExtrinsic(
-        hash: String,
-        completionHandler: CennzSubmitExtrinsicHandle
+            hash: String,
+            completionHandler: CennzSubmitExtrinsicHandle
     ) {
         val params = JSONArray()
         params.put(hash)
@@ -161,9 +192,9 @@ class CentralityNetwork {
                     val message = error.getString("message")
                     val code = error.getInt("code")
                     completionHandler.completionHandler(
-                        "",
-                        false,
-                        "$message - Error code: $code - Tx: $hash"
+                            "",
+                            false,
+                            "$message - Error code: $code - Tx: $hash"
                     )
                 } else {
                     completionHandler.completionHandler("", true, "")
@@ -177,9 +208,9 @@ class CentralityNetwork {
     }
 
     fun scanAccount(
-        address: String,
-        assetId: Int,
-        completionHandler: CennzGetBalanceHandle
+            address: String,
+            assetId: Int,
+            completionHandler: CennzGetBalanceHandle
     ) {
 
         val payload = JsonObject()
@@ -188,8 +219,8 @@ class CentralityNetwork {
         val call = apiService.scanAccount(payload)
         call.enqueue(object : Callback<CentralityAppResponse<ScanAccount>> {
             override fun onResponse(
-                call: Call<CentralityAppResponse<ScanAccount>>,
-                response: Response<CentralityAppResponse<ScanAccount>>
+                    call: Call<CentralityAppResponse<ScanAccount>>,
+                    response: Response<CentralityAppResponse<ScanAccount>>
             ) {
                 if (response.isSuccessful) {
                     val data: CentralityAppResponse<ScanAccount>? = response.body()
@@ -212,8 +243,8 @@ class CentralityNetwork {
                         val json = JSONObject(errorBody.string())
                         val message = json.getString("message")
                         completionHandler.completionHandler(
-                            0,
-                            message
+                                0,
+                                message
                         )
                     } else {
                         completionHandler.completionHandler(0, "")
@@ -228,11 +259,11 @@ class CentralityNetwork {
     }
 
     fun transactions(
-        address: String,
-        assetId: Int,
-        row: Int = 100,
-        page: Int = 0,
-        completionHandler: CennzGetTransactionsHandle
+            address: String,
+            assetId: Int,
+            row: Int = 100,
+            page: Int = 0,
+            completionHandler: CennzGetTransactionsHandle
     ) {
 
         val payload = JsonObject()
@@ -243,8 +274,8 @@ class CentralityNetwork {
         val call = apiService.transactions(payload)
         call.enqueue(object : Callback<CentralityAppResponse<ScanTransfer>> {
             override fun onResponse(
-                call: Call<CentralityAppResponse<ScanTransfer>>,
-                response: Response<CentralityAppResponse<ScanTransfer>>
+                    call: Call<CentralityAppResponse<ScanTransfer>>,
+                    response: Response<CentralityAppResponse<ScanTransfer>>
             ) {
                 if (response.isSuccessful) {
                     val data: CentralityAppResponse<ScanTransfer>? = response.body()
@@ -265,8 +296,8 @@ class CentralityNetwork {
                         val json = JSONObject(errorBody.string())
                         val message = json.getString("message")
                         completionHandler.completionHandler(
-                            emptyList(),
-                            message
+                                emptyList(),
+                                message
                         )
                     } else {
                         completionHandler.completionHandler(emptyList(), "")
@@ -279,4 +310,52 @@ class CentralityNetwork {
             }
         })
     }
+
+    fun getPublicAddress(
+            seed: String,
+            completionHandler: CennzGetAddressHandle
+    ) {
+
+        val payload = JsonObject()
+        payload.addProperty("seed", seed)
+
+        val call = localApiServices.getAddress(payload)
+        call.enqueue(object : Callback<JsonElement> {
+            override fun onResponse(
+                    call: Call<JsonElement>,
+                    response: Response<JsonElement>
+            ) {
+                if (response.isSuccessful) {
+                    val data: JsonObject? = response.body()!!.asJsonObject
+                    if (data != null) {
+                        val address = data.get("address").asString
+                        completionHandler.completionHandler(address, "")
+                    } else {
+                        completionHandler.completionHandler("", "")
+                    }
+
+                } else {
+                    val errorBody = response.errorBody()
+                    if ((errorBody != null)) {
+                        val json = JSONObject(errorBody.string())
+                        val message = json.getString("message")
+                        completionHandler.completionHandler(
+                                "",
+                                message
+                        )
+                    } else {
+                        completionHandler.completionHandler("", "")
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<JsonElement>, t: Throwable) {
+                completionHandler.completionHandler("", t.localizedMessage)
+            }
+        })
+    }
+}
+
+fun ByteArray.toHex(): String {
+    return joinToString("") { "%02x".format(it) }
 }
