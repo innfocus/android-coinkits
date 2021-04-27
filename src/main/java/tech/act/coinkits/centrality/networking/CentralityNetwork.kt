@@ -36,7 +36,7 @@ interface CennzGetBalanceHandle {
 }
 
 interface CennzGetAddressHandle {
-    fun completionHandler(address: String, error: String)
+    fun completionHandler(address: CennzAddress?, error: String)
 }
 
 interface CennzGetTransactionsHandle {
@@ -329,28 +329,28 @@ class CentralityNetwork {
                     val data: JsonObject? = response.body()!!.asJsonObject
                     if (data != null) {
                         val address = data.get("address").asString
-                        completionHandler.completionHandler(address, "")
+                        val publicKey = data.get("publicKey").asString
+                        completionHandler.completionHandler(CennzAddress(address, publicKey), "")
                     } else {
-                        completionHandler.completionHandler("", "")
+                        completionHandler.completionHandler(null, "")
                     }
-
                 } else {
                     val errorBody = response.errorBody()
                     if ((errorBody != null)) {
                         val json = JSONObject(errorBody.string())
                         val message = json.getString("message")
                         completionHandler.completionHandler(
-                                "",
+                                null,
                                 message
                         )
                     } else {
-                        completionHandler.completionHandler("", "")
+                        completionHandler.completionHandler(null, "")
                     }
                 }
             }
 
             override fun onFailure(call: Call<JsonElement>, t: Throwable) {
-                completionHandler.completionHandler("", t.localizedMessage)
+                completionHandler.completionHandler(null, t.localizedMessage)
             }
         })
     }
