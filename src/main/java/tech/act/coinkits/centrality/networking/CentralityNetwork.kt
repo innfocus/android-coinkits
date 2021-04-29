@@ -14,9 +14,10 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.POST
+import tech.act.coinkits.CoinsManager
 import tech.act.coinkits.centrality.model.*
 import tech.act.coinkits.hdwallet.bip32.ACTCoin
-
+import tech.act.coinkits.hdwallet.bip32.ACTNetwork
 
 class CENNZ_API {
     companion object {
@@ -30,6 +31,10 @@ class CENNZ_API {
         const val signMessageApi = "/cennz-sign"
         const val BASE_UNIT = 10000
     }
+}
+
+interface CennzCallbackHandle {
+    fun completionHandler(success: Boolean, error: String)
 }
 
 interface CennzGetBalanceHandle {
@@ -56,16 +61,25 @@ interface CennzAccountNextIndexHandle {
     fun completionHandler(nextIndex: Int, error: String)
 }
 
+interface CennzSendHandle {
+    fun completionHandler(
+        extrinsic: ExtrinsicBase?,
+        extrinsicHash: String,
+        success: Boolean,
+        error: String
+    )
+}
+
 interface CennzSubmitExtrinsicHandle {
     fun completionHandler(extrinsicHash: String, success: Boolean, error: String)
 }
 
 private interface CennzLocalApiServices {
     @POST(CENNZ_API.getAddressApi)
-    fun getAddress(@Body params: JsonObject): Call<JsonElement>
+    fun getAddress(@Body params: JsonObject): Call<JsonObject>
 
     @POST(CENNZ_API.signMessageApi)
-    fun signMessage(@Body params: JsonObject): Call<JsonElement>
+    fun signMessage(@Body params: JsonObject): Call<JsonObject>
 
     companion object {
         fun create(): CennzLocalApiServices {
@@ -140,7 +154,7 @@ class CentralityNetwork {
         var genesisHash = ""
         var blockHash = ""
         var mortalLength = 65
-        var current = 6425936
+        var current: Long = 6425936
     }
 
     private val apiService = CentralityApiServices.create()
@@ -154,7 +168,7 @@ class CentralityNetwork {
     }
 
     //    [182, 4]
-    fun makeEraOption(current: Int): ByteArray {
+    fun makeEraOption(current: Long): ByteArray {
         val result = ByteArray(2)
         val calPeriod = 128
         val quantizedPhase = current % calPeriod
@@ -171,30 +185,141 @@ class CentralityNetwork {
         fromAddress: String,
         toAddressStr: String,
         amount: Double,
-        assetId: Int = 1
-    ): ExtrinsicBase {
-        val nonce = 11
-        val blockHash = "0x711722f0981e5863c7045d0ef761a26d9f12875670d85fdbb22efa33c2ae724e"
-        val genesisHash = "0x0d0971c150a9741b8719b3c6c9c2e96ec5b2e3fb83641af868e6650f3e263ef0"
-        val extrinsic = ExtrinsicBase()
-        extrinsic.paramsMethod(
-            toAddressStr,
-            amount.toLong(),
-            assetId
-        )
-        extrinsic.paramsSignature(
-            fromAddress,
-            nonce
-        )
+        assetId: Int = 1,
+        completionHandler: CennzSendHandle
+    ) {
+        getRuntimeVersion(
+            object :
+                CennzCallbackHandle {
+                override fun completionHandler(success: Boolean, error: String) {
+                    chainGetBlockHash(
+                        object :
+                            CennzCallbackHandle {
+                            override fun completionHandler(success: Boolean, error: String) {
+                                if (success) {
+                                    chainGetFinalizedHead(
+                                        object :
+                                            CennzCallbackHandle {
+                                            override fun completionHandler(
+                                                success: Boolean,
+                                                error: String
+                                            ) {
+                                                if (success) {
+                                                    chainGetHeader(
+                                                        blockHash,
+                                                        object :
+                                                            CennzCallbackHandle {
+                                                            override fun completionHandler(
+                                                                success: Boolean,
+                                                                error: String
+                                                            ) {
+                                                                if (success) {
 
-        extrinsic.signOptions(
-            specVersion,
-            transactionVersion,
-            genesisHash,
-            blockHash,
-            this.makeEraOption(6526189)
-        )
-        return extrinsic
+                                                                    systemAccountNextIndex(
+                                                                        fromAddress,
+                                                                        object :
+                                                                            CennzAccountNextIndexHandle {
+                                                                            override fun completionHandler(
+                                                                                nextIndex: Int,
+                                                                                error: String
+                                                                            ) {
+                                                                                val extrinsic =
+                                                                                    ExtrinsicBase()
+                                                                                extrinsic.paramsMethod(
+                                                                                    toAddressStr,
+                                                                                    amount.toLong(),
+                                                                                    assetId
+                                                                                )
+                                                                                extrinsic.paramsSignature(
+                                                                                    fromAddress,
+                                                                                    nextIndex
+                                                                                )
+
+                                                                                extrinsic.signOptions(
+                                                                                    specVersion,
+                                                                                    transactionVersion,
+                                                                                    genesisHash,
+                                                                                    blockHash,
+                                                                                    makeEraOption(
+                                                                                        current
+                                                                                    )
+                                                                                )
+
+                                                                                // Sign tx
+                                                                                val seed = CoinsManager.shared.getHDWallet()!!.calculateSeed(
+                                                                                    ACTNetwork(ACTCoin.Centrality, false)
+                                                                                )
+                                                                                signExtrinsicBase(
+                                                                                    seed.toHexWithPrefix(),
+                                                                                    extrinsic,
+                                                                                    object :
+                                                                                        CennzCallbackHandle {
+                                                                                        override fun completionHandler(
+                                                                                            success: Boolean,
+                                                                                            error: String
+                                                                                        ) {
+                                                                                            if (success) {
+                                                                                                // Submit tx
+                                                                                                submitExtrinsic(
+                                                                                                    extrinsic.toHex(),
+                                                                                                    object :
+                                                                                                        CennzSubmitExtrinsicHandle {
+                                                                                                        override fun completionHandler(
+                                                                                                            extrinsicHash: String,
+                                                                                                            success: Boolean,
+                                                                                                            error: String
+                                                                                                        ) {
+                                                                                                            completionHandler.completionHandler(
+                                                                                                                extrinsic,
+                                                                                                                extrinsicHash,
+                                                                                                                success,
+                                                                                                                error
+                                                                                                            )
+                                                                                                        }
+
+                                                                                                    })
+                                                                                            } else {
+                                                                                                completionHandler.completionHandler(
+                                                                                                    null,
+                                                                                                    "",
+                                                                                                    false,
+                                                                                                    "Sign error"
+                                                                                                )
+                                                                                            }
+                                                                                        }
+                                                                                    })
+
+                                                                            }
+                                                                        })
+
+                                                                } else {
+                                                                    completionHandler.completionHandler(
+                                                                        null,
+                                                                        "",
+                                                                        false,
+                                                                        ""
+                                                                    )
+                                                                }
+                                                            }
+                                                        })
+                                                } else {
+                                                    completionHandler.completionHandler(
+                                                        null,
+                                                        "",
+                                                        false,
+                                                        ""
+                                                    )
+                                                }
+
+                                            }
+                                        })
+                                } else {
+                                    completionHandler.completionHandler(null, "", false, "")
+                                }
+                            }
+                        })
+                }
+            })
     }
 
     fun calculateEstimateFee(completionHandler: CennzEstimateFeeHandle) {
@@ -202,56 +327,52 @@ class CentralityNetwork {
     }
 
     fun getRuntimeVersion(
-        hash: String,
-        completionHandler: CennzSubmitExtrinsicHandle
+        completionHandler: CennzCallbackHandle
     ) {
         val params = JsonArray()
-        params.add(hash)
 
         val payload = JsonObject()
         payload.addProperty("id", 1)
         payload.addProperty("jsonrpc", "2.0")
-        payload.addProperty("method", "author_submitExtrinsic")
+        payload.addProperty("method", "state_getRuntimeVersion")
         payload.add("params", params)
 
         val call = cennzRpcApiServices.query(payload)
         call.enqueue(object : Callback<JsonObject> {
             override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                Log.d("SENDING_CENNZ", response.body().toString())
                 if (response.isSuccessful) {
                     val data: JsonObject? = response.body()
                     if (data != null) {
                         val error = data.getAsJsonObject("error")
                         if (error != null) {
-                            error.get("code")
                             val message = error.get("message").asString
-                            val code = error.get("code").asInt
                             completionHandler.completionHandler(
-                                "",
                                 false,
-                                "$message - Error code: $code - Tx: $hash"
+                                message
                             )
                         } else {
-                            val extrinsicHash = data.get("result").asString
-                            completionHandler.completionHandler(extrinsicHash, true, "")
+                            val result = data.getAsJsonObject("result")
+                            specVersion = result.get("specVersion").asInt
+                            transactionVersion = result.get("transactionVersion").asInt
+                            completionHandler.completionHandler(true, "")
                         }
                     } else {
-                        completionHandler.completionHandler("", false, "")
+                        completionHandler.completionHandler(false, "")
                     }
                 } else {
-                    completionHandler.completionHandler("", false, "")
+                    completionHandler.completionHandler(false, "")
                 }
             }
 
             override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                completionHandler.completionHandler("", false, t.localizedMessage)
+                completionHandler.completionHandler(false, t.localizedMessage)
             }
         })
     }
 
     fun chainGetHeader(
         hash: String,
-        completionHandler: CennzSubmitExtrinsicHandle
+        completionHandler: CennzCallbackHandle
     ) {
         val params = JsonArray()
         params.add(hash)
@@ -259,136 +380,122 @@ class CentralityNetwork {
         val payload = JsonObject()
         payload.addProperty("id", 1)
         payload.addProperty("jsonrpc", "2.0")
-        payload.addProperty("method", "author_submitExtrinsic")
+        payload.addProperty("method", "chain_getHeader")
         payload.add("params", params)
 
         val call = cennzRpcApiServices.query(payload)
         call.enqueue(object : Callback<JsonObject> {
             override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                Log.d("SENDING_CENNZ", response.body().toString())
                 if (response.isSuccessful) {
                     val data: JsonObject? = response.body()
                     if (data != null) {
                         val error = data.getAsJsonObject("error")
                         if (error != null) {
-                            error.get("code")
                             val message = error.get("message").asString
-                            val code = error.get("code").asInt
                             completionHandler.completionHandler(
-                                "",
                                 false,
-                                "$message - Error code: $code - Tx: $hash"
+                                message
                             )
                         } else {
-                            val extrinsicHash = data.get("result").asString
-                            completionHandler.completionHandler(extrinsicHash, true, "")
+                            val result = data.getAsJsonObject("result")
+                            val number = result.get("number").asString
+                            current = convertNumber(number)
+                            completionHandler.completionHandler(true, "")
                         }
                     } else {
-                        completionHandler.completionHandler("", false, "")
+                        completionHandler.completionHandler(false, "")
                     }
                 } else {
-                    completionHandler.completionHandler("", false, "")
+                    completionHandler.completionHandler(false, "")
                 }
             }
 
             override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                completionHandler.completionHandler("", false, t.localizedMessage)
+                completionHandler.completionHandler(false, t.localizedMessage)
             }
         })
     }
 
     fun chainGetFinalizedHead(
-        hash: String,
-        completionHandler: CennzSubmitExtrinsicHandle
+        completionHandler: CennzCallbackHandle
     ) {
         val params = JsonArray()
-        params.add(hash)
 
         val payload = JsonObject()
         payload.addProperty("id", 1)
         payload.addProperty("jsonrpc", "2.0")
-        payload.addProperty("method", "author_submitExtrinsic")
+        payload.addProperty("method", "chain_getFinalizedHead")
         payload.add("params", params)
 
         val call = cennzRpcApiServices.query(payload)
         call.enqueue(object : Callback<JsonObject> {
             override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                Log.d("SENDING_CENNZ", response.body().toString())
                 if (response.isSuccessful) {
                     val data: JsonObject? = response.body()
                     if (data != null) {
                         val error = data.getAsJsonObject("error")
                         if (error != null) {
-                            error.get("code")
                             val message = error.get("message").asString
-                            val code = error.get("code").asInt
                             completionHandler.completionHandler(
-                                "",
                                 false,
-                                "$message - Error code: $code - Tx: $hash"
+                                message
                             )
                         } else {
-                            val extrinsicHash = data.get("result").asString
-                            completionHandler.completionHandler(extrinsicHash, true, "")
+                            blockHash = data.get("result").asString
+                            completionHandler.completionHandler(true, "")
                         }
                     } else {
-                        completionHandler.completionHandler("", false, "")
+                        completionHandler.completionHandler(false, "")
                     }
                 } else {
-                    completionHandler.completionHandler("", false, "")
+                    completionHandler.completionHandler(false, "")
                 }
             }
 
             override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                completionHandler.completionHandler("", false, t.localizedMessage)
+                completionHandler.completionHandler(false, t.localizedMessage)
             }
         })
     }
 
     fun chainGetBlockHash(
-        hash: String,
-        completionHandler: CennzSubmitExtrinsicHandle
+        completionHandler: CennzCallbackHandle
     ) {
         val params = JsonArray()
-        params.add(hash)
 
         val payload = JsonObject()
         payload.addProperty("id", 1)
         payload.addProperty("jsonrpc", "2.0")
-        payload.addProperty("method", "author_submitExtrinsic")
+        payload.addProperty("method", "chain_getBlockHash")
         payload.add("params", params)
 
         val call = cennzRpcApiServices.query(payload)
         call.enqueue(object : Callback<JsonObject> {
             override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                Log.d("SENDING_CENNZ", response.body().toString())
                 if (response.isSuccessful) {
                     val data: JsonObject? = response.body()
                     if (data != null) {
                         val error = data.getAsJsonObject("error")
                         if (error != null) {
-                            error.get("code")
                             val message = error.get("message").asString
-                            val code = error.get("code").asInt
                             completionHandler.completionHandler(
-                                "",
                                 false,
-                                "$message - Error code: $code - Tx: $hash"
+                                message
                             )
                         } else {
-                            val extrinsicHash = data.get("result").asString
-                            completionHandler.completionHandler(extrinsicHash, true, "")
+                            genesisHash = data.get("result").asString
+                            completionHandler.completionHandler(true, "")
                         }
                     } else {
-                        completionHandler.completionHandler("", false, "")
+                        completionHandler.completionHandler(false, "")
                     }
                 } else {
-                    completionHandler.completionHandler("", false, "")
+                    completionHandler.completionHandler(false, "")
                 }
             }
 
             override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                completionHandler.completionHandler("", false, t.localizedMessage)
+                completionHandler.completionHandler(false, t.localizedMessage)
             }
         })
     }
@@ -646,13 +753,13 @@ class CentralityNetwork {
         payload.addProperty("seed", seed)
 
         val call = localApiServices.getAddress(payload)
-        call.enqueue(object : Callback<JsonElement> {
+        call.enqueue(object : Callback<JsonObject> {
             override fun onResponse(
-                call: Call<JsonElement>,
-                response: Response<JsonElement>
+                call: Call<JsonObject>,
+                response: Response<JsonObject>
             ) {
                 if (response.isSuccessful) {
-                    val data: JsonObject? = response.body()!!.asJsonObject
+                    val data: JsonObject? = response.body()
                     if (data != null) {
                         val address = data.get("address").asString
                         val publicKey = data.get("publicKey").asString
@@ -675,8 +782,54 @@ class CentralityNetwork {
                 }
             }
 
-            override fun onFailure(call: Call<JsonElement>, t: Throwable) {
+            override fun onFailure(call: Call<JsonObject>, t: Throwable) {
                 completionHandler.completionHandler(null, t.localizedMessage)
+            }
+        })
+    }
+
+    fun signExtrinsicBase(
+        seed: String,
+        extrinsic: ExtrinsicBase,
+        completionHandler: CennzCallbackHandle
+    ) {
+
+        val payload = JsonObject()
+        payload.addProperty("seed", seed)
+        payload.addProperty("payload", extrinsic.createPayload().toHexWithPrefix())
+
+        val call = localApiServices.signMessage(payload)
+        call.enqueue(object : Callback<JsonObject> {
+            override fun onResponse(
+                call: Call<JsonObject>,
+                response: Response<JsonObject>
+            ) {
+                if (response.isSuccessful) {
+                    val data: JsonObject? = response.body()
+                    if (data != null) {
+                        val signature = data.get("signature").asString
+                        extrinsic.sign(signature)
+                        completionHandler.completionHandler(true, "")
+                    } else {
+                        completionHandler.completionHandler(false, "")
+                    }
+                } else {
+                    val errorBody = response.errorBody()
+                    if ((errorBody != null)) {
+                        val json = JSONObject(errorBody.string())
+                        val message = json.getString("message")
+                        completionHandler.completionHandler(
+                            false,
+                            message
+                        )
+                    } else {
+                        completionHandler.completionHandler(false, "")
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                completionHandler.completionHandler(false, t.localizedMessage)
             }
         })
     }

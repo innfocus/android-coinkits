@@ -35,6 +35,10 @@ class ExtrinsicBase {
         this.method.args.asset_id = assetId
     }
 
+    fun sign(signature: String) {
+        this.signature.signature = signature.removePrefix("0x").fromHexToByteArray()
+    }
+
     fun paramsSignature(
         signer: String,
         nonce: Int

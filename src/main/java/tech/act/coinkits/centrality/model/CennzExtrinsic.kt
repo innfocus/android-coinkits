@@ -1,5 +1,6 @@
 package tech.act.coinkits.centrality.model
 
+import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import java.io.Serializable
 
@@ -29,4 +30,9 @@ class CennzExtrinsic : Serializable {
     val fee: Long = 0
     val success: Boolean = true
     val nonce: Long = 0
+
+    override fun toString(): String {
+        val gson = Gson()
+        return gson.toJson(this)
+    }
 }
