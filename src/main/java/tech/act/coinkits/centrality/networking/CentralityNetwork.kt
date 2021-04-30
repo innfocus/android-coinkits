@@ -29,7 +29,6 @@ class CENNZ_API {
         const val localApiServer = "https://fgwallet.srsfc.com"
         const val getAddressApi = "/cennz-address"
         const val signMessageApi = "/cennz-sign"
-        const val BASE_UNIT = 10000
     }
 }
 
@@ -155,6 +154,7 @@ class CentralityNetwork {
         var blockHash = ""
         var mortalLength = 65
         var current: Long = 6425936
+        const val BASE_UNIT = 10000
     }
 
     private val apiService = CentralityApiServices.create()

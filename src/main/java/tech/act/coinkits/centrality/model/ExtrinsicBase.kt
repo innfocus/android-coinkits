@@ -126,7 +126,7 @@ class ExtrinsicBase {
     class MethodArgs {
         var to: String = ""
         var asset_id: Int = 1
-        var amount: Long = 100000
+        var amount: Long = 0
 
         fun toU8a(): ByteArray {
             val address = CennzAddress(this.to)
