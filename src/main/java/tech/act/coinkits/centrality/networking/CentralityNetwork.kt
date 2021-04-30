@@ -246,9 +246,14 @@ class CentralityNetwork {
                                                                                 )
 
                                                                                 // Sign tx
-                                                                                val seed = CoinsManager.shared.getHDWallet()!!.calculateSeed(
-                                                                                    ACTNetwork(ACTCoin.Centrality, false)
-                                                                                )
+                                                                                val seed =
+                                                                                    CoinsManager.shared.getHDWallet()!!
+                                                                                        .calculateSeed(
+                                                                                            ACTNetwork(
+                                                                                                ACTCoin.Centrality,
+                                                                                                false
+                                                                                            )
+                                                                                        )
                                                                                 signExtrinsicBase(
                                                                                     seed.toHexWithPrefix(),
                                                                                     extrinsic,
@@ -462,6 +467,7 @@ class CentralityNetwork {
         completionHandler: CennzCallbackHandle
     ) {
         val params = JsonArray()
+        params.add(0)
 
         val payload = JsonObject()
         payload.addProperty("id", 1)

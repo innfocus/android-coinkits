@@ -1,5 +1,6 @@
 package tech.act.coinkits.centrality.model
 
+import com.google.gson.Gson
 import tech.act.coinkits.centrality.networking.toHexWithPrefix
 import tech.act.coinkits.centrality.utils.U8a
 import tech.act.coinkits.hdwallet.core.helpers.fromHexToByteArray
@@ -14,7 +15,7 @@ class ExtrinsicBase {
     var blockHash: String = ""
 
     fun toU8a(): ByteArray {
-        var encoded: ByteArray = ByteArray(1)
+        var encoded = ByteArray(1)
         encoded[0] = 132.toByte()
         encoded += this.signature.toU8a()
         encoded += this.method.toU8a()
@@ -79,7 +80,7 @@ class ExtrinsicBase {
     }
 
     class Signature {
-        var signer: String = "5CQJMQtYmbGBcZhGiviZroo7fwW2hbefVanGTgRofckGTFwf"
+        var signer: String = ""
         var signature: ByteArray = ByteArray(64)
         var era: ByteArray = ByteArray(2)
         var nonce: Int = 0
@@ -94,7 +95,7 @@ class ExtrinsicBase {
             if (address.checkValid()) {
                 encoded += address.publicKey!!
             }
-            encoded += 1.toByte()
+//            encoded += 1.toByte()
             encoded += this.signature
             encoded += era
             encoded += U8a.compactToU8a(this.nonce.toBigInteger())
@@ -123,7 +124,7 @@ class ExtrinsicBase {
     }
 
     class MethodArgs {
-        var to: String = "5EDGG7QxyMUgZgoDHApgs4S9Ufcuv9cPYuHM7UE6RKwaFwCL"
+        var to: String = ""
         var asset_id: Int = 1
         var amount: Long = 100000
 
@@ -142,5 +143,9 @@ class ExtrinsicBase {
         }
     }
 
+    override fun toString(): String {
+        val gson = Gson()
+        return gson.toJson(this)
+    }
 
 }
