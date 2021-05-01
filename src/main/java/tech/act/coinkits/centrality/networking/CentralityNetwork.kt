@@ -720,7 +720,7 @@ class CentralityNetwork {
                     val data: CentralityAppResponse<ScanTransfer>? = response.body()
                     if (data != null) {
                         if (data.data != null) {
-                            val transfers = data.data!!.transfers.filter { it.assetID == assetId }
+                            val transfers = data.data!!.transfers.filter { it.assetID == assetId  && it.success }
                             completionHandler.completionHandler(transfers, "")
                         } else {
                             completionHandler.completionHandler(emptyList(), "")
