@@ -7,6 +7,8 @@ import tech.act.coinkits.bitcoin.networking.Gbtc
 import tech.act.coinkits.cardano.networking.*
 import tech.act.coinkits.cardano.networking.models.ADATransaction
 import tech.act.coinkits.cardano.networking.models.CardanoCurrentBestBlock
+import tech.act.coinkits.centrality.model.CennzAddress
+import tech.act.coinkits.centrality.networking.*
 import tech.act.coinkits.hdwallet.bip32.ACTCoin
 import tech.act.coinkits.hdwallet.bip32.ACTNetwork
 import tech.act.coinkits.hdwallet.bip32.ACTPrivateKey
@@ -21,7 +23,6 @@ import tech.act.coinkits.ripple.networking.Gxrp
 import tech.act.coinkits.ripple.networking.XRPBalanceHandle
 import tech.act.coinkits.ripple.networking.XRPSubmitTxtHandle
 import tech.act.coinkits.ripple.networking.XRPTransactionsHandle
-import kotlin.math.acos
 
 interface BalanceHandle {
     fun completionHandler(balance: Double, success: Boolean)
@@ -57,7 +58,8 @@ interface ICoinsManager {
                  networkMemo: MemoData? = null,
                  completionHandler: SendCoinHandle)
 
-    fun estimateFee(serAddressStr: String,
+    fun estimateFee(amount: Double,
+                    serAddressStr: String,
                     paramFee: Double,
                     networkMinFee: Double = 0.0,
                     serviceFee: Double = 0.0,
@@ -74,11 +76,13 @@ class CoinsManager : ICoinsManager {
     private var prvKeysManager = mutableMapOf<String, Array<ACTPrivateKey>>()
     private var extendPrvKeysNumber = mutableMapOf<String, Int>()
     private var addressesManager = mutableMapOf<String, Array<ACTAddress>>()
-    private var coinsSupported = arrayListOf(ACTCoin.Bitcoin, ACTCoin.Ethereum, ACTCoin.Cardano, ACTCoin.Ripple)
+    private var coinsSupported = arrayListOf(ACTCoin.Bitcoin, ACTCoin.Ethereum, ACTCoin.Cardano, ACTCoin.Ripple,
+        ACTCoin.Centrality, ACTCoin.Centrality)
     private var networkManager = mutableMapOf(ACTCoin.Bitcoin.symbolName() to ACTNetwork(ACTCoin.Bitcoin, true),
             ACTCoin.Ethereum.symbolName() to ACTNetwork(ACTCoin.Ethereum, true),
             ACTCoin.Cardano.symbolName() to ACTNetwork(ACTCoin.Cardano, false),
-            ACTCoin.Ripple.symbolName() to ACTNetwork(ACTCoin.Ripple, true))
+            ACTCoin.Ripple.symbolName() to ACTNetwork(ACTCoin.Ripple, true),
+            ACTCoin.Centrality.symbolName() to ACTNetwork(ACTCoin.Centrality, false))
     var mnemonicRecover = ""
     var mnemonic = ""
 
@@ -142,13 +146,30 @@ class CoinsManager : ICoinsManager {
                 when (adds != null) {
                     true -> adds
                     false -> {
-                        val prvKeys = privateKeys(coin)
-                        if (prvKeys != null) {
-                            addressesManager[symbolName] = prvKeys.map { ACTAddress(it.publicKey()) }.toTypedArray()
-                            addressesManager[symbolName]
-                        } else {
-                            null
+                        when (coin) {
+                            ACTCoin.Centrality -> {
+                                val seed = getHDWallet()!!.calculateSeed(ACTNetwork(ACTCoin.Centrality, false))
+                                CentralityNetwork.shared.getPublicAddress(seed.toHexWithPrefix(), object : CennzGetAddressHandle {
+                                    override fun completionHandler(address: CennzAddress?, error: String) {
+                                        if(address != null) {
+                                            val actAddress = ACTAddress(address.address, ACTNetwork(ACTCoin.Centrality, false))
+                                            addressesManager[symbolName] = arrayOf(actAddress)
+                                        }
+                                    }
+                                })
+                                null
+                            }
+                            else -> {
+                                val prvKeys = privateKeys(coin)
+                                if (prvKeys != null) {
+                                    addressesManager[symbolName] = prvKeys.map { ACTAddress(it.publicKey()) }.toTypedArray()
+                                    addressesManager[symbolName]
+                                } else {
+                                    null
+                                }
+                            }
                         }
+
                     }
                 }
             }
@@ -170,6 +191,11 @@ class CoinsManager : ICoinsManager {
                 }
                 ACTCoin.Ripple -> {
                     getXRPBalance(adds.first(), completionHandler)
+                }
+                ACTCoin.Centrality -> {
+                    getCentralityBalance(adds.first().rawAddressString(),
+                    coin.assetId,
+                    completionHandler)
                 }
             }
         } else {
@@ -199,7 +225,8 @@ class CoinsManager : ICoinsManager {
         }
     }
 
-    override fun estimateFee(serAddressStr: String,
+    override fun estimateFee(amount: Double,
+                             serAddressStr: String,
                              paramFee: Double,
                              networkMinFee: Double,
                              serviceFee: Double,
@@ -225,6 +252,7 @@ class CoinsManager : ICoinsManager {
                             unspentAddresses,
                             addresses.first(),
                             addresses.first().rawAddressString(),
+                            amount,
                             serAddressStr,
                             paramFee,
                             networkMinFee,
@@ -237,6 +265,14 @@ class CoinsManager : ICoinsManager {
                 } else {
                     completionHandler.completionHandler(0.0, "Error")
                 }
+            }
+            ACTCoin.Centrality -> {
+                CentralityNetwork.shared.calculateEstimateFee(object : CennzEstimateFeeHandle {
+                    override fun completionHandler(estimateFee: Long, error: String) {
+                        completionHandler.completionHandler(estimateFee.toDouble(), "")
+                    }
+
+                })
             }
         }
     }
@@ -316,11 +352,11 @@ class CoinsManager : ICoinsManager {
                     true -> {
                         val nw = networkManager[symbolName]
                         if (nw != null) {
-                            val keys: ACTHDWallet.Result = wallet!!.generatePrivateKeys(checkExt.count,
+                            val keys: ACTHDWallet.Result = wallet.generatePrivateKeys(checkExt.count,
                                     checkExt.fromIdx,
                                     checkIn.count,
                                     checkIn.fromIdx,
-                                    nw!!)
+                                    nw)
                             prvKeysManager[checkExt.keyName] = extPrvKeys.plus(keys.extKeys)
                             prvKeysManager[checkIn.keyName] = inPrvKeys.plus(keys.intKeys)
                             prvKeysManager[checkExt.keyName]!!.plus(prvKeysManager[checkIn.keyName]!!)
@@ -400,6 +436,21 @@ class CoinsManager : ICoinsManager {
                 } else {
                     completionHandler.completionHandler(balance, true)
                 }
+            }
+        })
+    }
+
+    private fun getCentralityBalance(
+        address: String,
+        assetId: Int,
+        completionHandler: BalanceHandle
+    ) {
+        CentralityNetwork.shared.scanAccount(address, assetId, object : CennzGetBalanceHandle {
+            override fun completionHandler(
+                balance: Long,
+                error: String
+            ) {
+                completionHandler.completionHandler(balance.toDouble(), true)
             }
         })
     }

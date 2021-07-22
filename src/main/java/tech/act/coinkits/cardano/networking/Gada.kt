@@ -26,6 +26,9 @@ import tech.act.coinkits.filterAddress
 import tech.act.coinkits.hdwallet.bip32.ACTPrivateKey
 import tech.act.coinkits.hdwallet.bip44.ACTAddress
 import java.util.*
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.max
 
 
 class YOROIAPI {
@@ -38,6 +41,7 @@ class YOROIAPI {
         const val addressUsed = "v2/addresses/filterUsed"
         const val bestblock = "v2/bestblock"
         const val TX_HISTORY_RESPONSE_LIMIT = 50
+        const val MIN_AMOUNT_PER_TX = 1000000.0
     }
 }
 
@@ -127,29 +131,14 @@ class Gada {
         addresses: Array<String>,
         completionHandler: ADABalanceHandle
     ) {
-        val params = JsonObject()
-        params.add("addresses", addresses.toJsonArray())
-        val call = apiService.getBalance(params)
-        call.enqueue(object : Callback<JsonObject> {
-            override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                val body = response.body()
-                if ((body != null) && (body.get("sum") != null) && !body.get("sum").isJsonNull) {
-                    try {
-                        val sum = (body.get("sum").asString.toLongOrNull()
-                            ?: -1).toDouble() / ADACoin
-                        completionHandler.completionHandler(sum, null)
-                    } catch (e: ClassCastException) {
-                        completionHandler.completionHandler(-1.0, null)
-                    } catch (e: IllegalStateException) {
-                        completionHandler.completionHandler(-1.0, null)
-                    }
-                } else {
-                    completionHandler.completionHandler(-1.0, null)
-                }
-            }
-
-            override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                completionHandler.completionHandler(0.0, t)
+        unspentOutputs(addresses, object : ADAUnspentOutputsHandle {
+            override fun completionHandler(
+                unspentOutputs: Array<ADAUnspentTransaction>,
+                err: Throwable?
+            ) {
+                val total = unspentOutputs.map { it.amount }.sum()
+                val sum = total.toDouble() / ADACoin
+                completionHandler.completionHandler(sum, null)
             }
         })
     }
@@ -251,30 +240,30 @@ class Gada {
         unspentAddresses: Array<String>,
         fromAddress: ACTAddress,
         toAddressStr: String,
+        amount: Double,
         serAddressStr: String,
         minerFee: Double,
         minFee: Double,
         serviceFee: Double,
         completionHandler: ADAEstimateFeeHandle
     ) {
-        createTxAux(prvKeys,
-            unspentAddresses,
-            fromAddress,
-            toAddressStr,
-            serAddressStr,
-            0.0001,
-            0.0001,
-                serviceFee,
-            object : ADACreateTxAuxHandle {
-                override fun completionHandler(txAux: TxAux?, errStr: String) {
-                    if (txAux != null) {
-                        val estimateFee = (txAux.encode().size * minerFee + minFee) / ADACoin
-                        completionHandler.completionHandler(estimateFee, "")
-                    } else {
-                        completionHandler.completionHandler(0.0, errStr)
+        createTxAux(prvKeys = prvKeys,
+                unspentAddresses = unspentAddresses,
+                fromAddress = fromAddress,
+                toAddressStr = toAddressStr,
+                serAddressStr = serAddressStr,
+                amount = max(YOROIAPI.MIN_AMOUNT_PER_TX, amount),
+                serviceFee = serviceFee,
+                completionHandler = object : ADACreateTxAuxHandle {
+                    override fun completionHandler(txAux: TxAux?, errStr: String) {
+                        if (txAux != null) {
+                            val estimateFee = (txAux.encode().size * minerFee + minFee) / ADACoin
+                            completionHandler.completionHandler(estimateFee, "")
+                        } else {
+                            completionHandler.completionHandler(0.0, errStr)
+                        }
                     }
-                }
-            })
+                })
     }
 
     private data class MapKeys(val priKey: ACTPrivateKey, val address: String)
@@ -301,7 +290,6 @@ class Gada {
             object : ADACreateTxAuxHandle {
                 override fun completionHandler(txAux: TxAux?, errStr: String) {
                     if (txAux != null) {
-//                        completionHandler.completionHandler(txAux.tx.getID(), false, errStr)
                             sendTxAux(txAux.base64(), txAux.tx.getID(), object : ADASendTxAuxHandle {
                                 override fun completionHandler(transID: String, success: Boolean, errStr: String) {
                                     completionHandler.completionHandler(transID, success, errStr)
@@ -330,71 +318,86 @@ class Gada {
                 if (err == null) {
                     unspentOutputs(addressUsed, object : ADAUnspentOutputsHandle {
                         override fun completionHandler(
-                            unspentOutputs: Array<ADAUnspentTransaction>,
-                            err: Throwable?
+                                unspentOutputs: Array<ADAUnspentTransaction>,
+                                err: Throwable?
                         ) {
                             if (err == null) {
                                 var mapKeys = arrayOf<MapKeys>()
                                 for (i in prvKeys.indices) {
                                     if (addressUsed.contains(unspentAddresses[i])) {
-                                        mapKeys =
-                                            mapKeys.plus(MapKeys(prvKeys[i], unspentAddresses[i]))
+                                        mapKeys = mapKeys.plus(MapKeys(prvKeys[i], unspentAddresses[i]))
                                     }
                                 }
 
                                 var prvKeyBytes = arrayOf<ByteArray>()
                                 var chainCodes = arrayOf<ByteArray>()
-                                val total = unspentOutputs.map { it.amount }.sum()
-                                val serFee = when (CarAddress.isValidAddress(serAddressStr)) {
-                                    true -> serviceFee * ADACoin
+                                var walletServiceFee = when (CarAddress.isValidAddress(serAddressStr)) {
+                                    true -> floor(serviceFee)
                                     false -> 0.0
                                 }
+                                if (walletServiceFee > 0 && walletServiceFee < YOROIAPI.MIN_AMOUNT_PER_TX) {
+                                    walletServiceFee = YOROIAPI.MIN_AMOUNT_PER_TX
+                                }
 
-                                val netFee = networkFee * ADACoin
-                                val amountSend = amount * ADACoin
-                                var change = (total - amountSend - netFee - serFee).toLong()
+                                var netFee = ceil(networkFee * ADACoin)
+                                // Network fee always > 0
+                                if (netFee <= 0) {
+                                    netFee = 0.12
+                                }
+                                var availableAmount = floor(amount)
+                                val totalAmount = availableAmount + netFee + walletServiceFee
+                                var spentCoins = 0.0
+
                                 val tx = Tx()
+
+                                unspentOutputs.forEach {
+                                    if (it.amount > 0 && (spentCoins < totalAmount)) {
+                                        spentCoins += it.amount
+//                                        Log.d("TEST_TX", it.transationHash)
+//                                        Log.d("TEST_TX", it.transactionIdx.toString())
+                                        val input = TxoPointer(it.transationHash, it.transactionIdx.toLong())
+                                        val add = it.receiver
+
+                                        val keys = mapKeys.first { item -> item.address == add }
+                                        prvKeyBytes = prvKeyBytes.plus(keys.priKey.raw!!)
+                                        chainCodes = chainCodes.plus(keys.priKey.chainCode!!)
+                                        tx.addInput(input)
+                                    }
+                                }
+
+                                var change = (spentCoins - totalAmount).toLong()
                                 // minimum_utxo_val
-                                if (change > 1000000) {
+                                if (change < 0) {
+                                    availableAmount += change
+                                    change = 0
+                                }
+                                if (change >= YOROIAPI.MIN_AMOUNT_PER_TX) {
                                     val out1 = TxOut(fromAddress.rawAddressString(), change)
                                     tx.addOutput(out1)
                                 } else {
                                     change = 0
                                 }
 
-                                val out2 = TxOut(toAddressStr, amountSend.toLong())
+                                val out2 = TxOut(toAddressStr, availableAmount.toLong())
                                 tx.addOutput(out2)
 
-                                if (serFee > 0) {
-                                    val out3 = TxOut(serAddressStr, serFee.toLong())
+                                if (walletServiceFee > 0) {
+                                    val out3 = TxOut(serAddressStr, walletServiceFee.toLong())
                                     tx.addOutput(out3)
                                 }
 
-                                val fee = total - (amountSend + serFee + change)
-
-                                tx.setFee(fee.toLong())
-//                                tx.setTtl(8106815)
-                                tx.setTtl(getTimeSlot())
-
-                                unspentOutputs.forEach {
-
-                                    Log.d("TEST_TX", it.transationHash)
-                                    Log.d("TEST_TX", it.transactionIdx.toString())
-                                    val input =
-                                        TxoPointer(it.transationHash, it.transactionIdx.toLong())
-                                    val add = it.receiver
-
-                                    val keys = mapKeys.first { item -> item.address == add }
-                                    prvKeyBytes = prvKeyBytes.plus(keys.priKey.raw!!)
-                                    chainCodes = chainCodes.plus(keys.priKey.chainCode!!)
-                                    tx.addInput(input)
+                                var fee = spentCoins - (availableAmount + walletServiceFee + change)
+                                // Network fee always > 0
+                                if (fee <= 0) {
+                                    fee = 0.12
                                 }
+                                tx.setFee(fee.toLong())
+                                tx.setTtl(getTimeSlot())
 
                                 val txId = tx.getID()
 
-                                Log.d("TEST_TX", txId)
-                                val inWitnesses =
-                                    TxWitnessBuilder.builder(txId, prvKeyBytes, chainCodes)
+//                                Log.d("TEST_TX", txId)
+                                val inWitnesses = TxWitnessBuilder.builder(txId, prvKeyBytes, chainCodes)
                                 val witnessSet = TransactionWitnessSet(inWitnesses)
                                 val txAux = TxAux(tx, witnessSet)
 
@@ -507,9 +510,9 @@ class Gada {
                     val js = JSONObject(errBody.string())
                     val msg = when (js.has("message")) {
                         true -> js.get("message").toString()
-                        false -> "ERROR"
+                        false -> js.toString()
                     }
-                    completionHandler.completionHandler(txId, false, msg)
+                    completionHandler.completionHandler(txId, false, "$msg - Tx: $signedTx - TxID: $txId")
                 } else {
                     completionHandler.completionHandler(txId, true, "")
                 }
