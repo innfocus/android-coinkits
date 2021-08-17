@@ -41,11 +41,22 @@ object U8a {
             re = re shl 2
             re += 1.toBigInteger()
             return toArrayLikeLE(re, 2)
-        } else {
+        } else if (value < MAX_U16) {
             var re = value
             re = re shl 2
             re += 2.toBigInteger()
             return toArrayLikeLE(re, 4)
+        } else {
+            val u8a = toArrayLikeLE(value, 4)
+            var length = u8a.size
+            while (u8a[length - 1] == 0.toByte()) {
+                length -= 1;
+            }
+
+            var result = ByteArray(1)
+            result[0] = (((length - 4) shl 2) + 0b11).toByte()
+            result += u8a.slice(0 until length)
+            return result
         }
     }
 }
