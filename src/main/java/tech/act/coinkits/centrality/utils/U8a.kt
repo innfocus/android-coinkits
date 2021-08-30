@@ -3,9 +3,9 @@ package tech.act.coinkits.centrality.utils
 import java.math.BigInteger
 
 object U8a {
-    var MAX_U8 = 2.toBigInteger().pow(8 - 2) - 1.toBigInteger()
-    var MAX_U16 = 2.toBigInteger().pow(16 - 2) - 1.toBigInteger()
-    var MAX_U32 = 2.toBigInteger().pow(32 - 2) - 1.toBigInteger()
+    private var MAX_U8 = 2.toBigInteger().pow(8 - 2) - 1.toBigInteger()
+    private var MAX_U16 = 2.toBigInteger().pow(16 - 2) - 1.toBigInteger()
+//    private var MAX_U32 = 2.toBigInteger().pow(32 - 2) - 1.toBigInteger()
 
     fun compactAddLength(input: ByteArray): ByteArray {
         val length = input.size
@@ -25,38 +25,43 @@ object U8a {
             i += 1
         }
         while (i < byteLength) {
-            res[i] = 0;
+            res[i] = 0
             i += 1
         }
         return res
     }
 
     fun compactToU8a(value: BigInteger): ByteArray {
-        if (value < MAX_U8) {
-            val result = ByteArray(1)
-            result[0] = (value shl 2).toByte()
-            return result
-        } else if (value < MAX_U16) {
-            var re = value
-            re = re shl 2
-            re += 1.toBigInteger()
-            return toArrayLikeLE(re, 2)
-        } else if (value < MAX_U16) {
-            var re = value
-            re = re shl 2
-            re += 2.toBigInteger()
-            return toArrayLikeLE(re, 4)
-        } else {
-            val u8a = toArrayLikeLE(value, 4)
-            var length = u8a.size
-            while (u8a[length - 1] == 0.toByte()) {
-                length -= 1;
+        when {
+            value <= MAX_U8 -> {
+                val result = ByteArray(1)
+                result[0] = (value shl 2).toByte()
+                return result
             }
+            value <= MAX_U16 -> {
+                var re = value
+                re = re shl 2
+                re += 1.toBigInteger()
+                return toArrayLikeLE(re, 2)
+            }
+            value <= MAX_U16 -> {
+                var re = value
+                re = re shl 2
+                re += 2.toBigInteger()
+                return toArrayLikeLE(re, 4)
+            }
+            else -> {
+                val u8a = toArrayLikeLE(value, 4)
+                var length = u8a.size
+                while (u8a[length - 1] == 0.toByte()) {
+                    length -= 1
+                }
 
-            var result = ByteArray(1)
-            result[0] = (((length - 4) shl 2) + 0b11).toByte()
-            result += u8a.slice(0 until length)
-            return result
+                var result = ByteArray(1)
+                result[0] = (((length - 4) shl 2) + 0b11).toByte()
+                result += u8a.slice(0 until length)
+                return result
+            }
         }
     }
 }
