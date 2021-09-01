@@ -33,7 +33,7 @@ class ExtrinsicBase {
     ) {
         this.method.args.to = toAddress
         this.method.args.amount = amount
-        this.method.args.asset_id = assetId
+        this.method.args.assetId = assetId
     }
 
     fun sign(signature: String) {
@@ -106,6 +106,11 @@ class ExtrinsicBase {
         fun toHex(): String {
             return toU8a().toHexWithPrefix()
         }
+
+        override fun toString(): String {
+            val gson = Gson()
+            return gson.toJson(this)
+        }
     }
 
     class Method {
@@ -121,16 +126,21 @@ class ExtrinsicBase {
         fun toHex(): String {
             return toU8a().toHexWithPrefix()
         }
+
+        override fun toString(): String {
+            val gson = Gson()
+            return gson.toJson(this)
+        }
     }
 
     class MethodArgs {
         var to: String = ""
-        var asset_id: Int = 1
+        var assetId: Int = 1
         var amount: Long = 0
 
         fun toU8a(): ByteArray {
             val address = CennzAddress(this.to)
-            var encoded = U8a.compactToU8a(asset_id.toBigInteger())
+            var encoded = U8a.compactToU8a(assetId.toBigInteger())
             if (address.checkValid()) {
                 encoded += address.publicKey!!
             }
@@ -140,6 +150,11 @@ class ExtrinsicBase {
 
         fun toHex(): String {
             return toU8a().toHexWithPrefix()
+        }
+
+        override fun toString(): String {
+            val gson = Gson()
+            return gson.toJson(this)
         }
     }
 

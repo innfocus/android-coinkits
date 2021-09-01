@@ -267,6 +267,7 @@ class CentralityNetwork {
                                                                                                 // Submit tx
                                                                                                 submitExtrinsic(
                                                                                                     extrinsic.toHex(),
+                                                                                                    extrinsic.toString(),
                                                                                                     object :
                                                                                                         CennzSubmitExtrinsicHandle {
                                                                                                         override fun completionHandler(
@@ -600,6 +601,7 @@ class CentralityNetwork {
 
     fun submitExtrinsic(
         hash: String,
+        json: String,
         completionHandler: CennzSubmitExtrinsicHandle
     ) {
         val params = JsonArray()
@@ -626,7 +628,7 @@ class CentralityNetwork {
                             completionHandler.completionHandler(
                                 "",
                                 false,
-                                "$message - Error code: $code - Tx: $hash"
+                                "$message - Error code: $code - Tx: $hash - JSON: $json"
                             )
                         } else {
                             val extrinsicHash = data.get("result").asString
