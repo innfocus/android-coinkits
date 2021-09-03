@@ -5,7 +5,7 @@ import java.math.BigInteger
 object U8a {
     private var MAX_U8 = 2.toBigInteger().pow(8 - 2) - 1.toBigInteger()
     private var MAX_U16 = 2.toBigInteger().pow(16 - 2) - 1.toBigInteger()
-//    private var MAX_U32 = 2.toBigInteger().pow(32 - 2) - 1.toBigInteger()
+    private var MAX_U32 = 2.toBigInteger().pow(32 - 2) - 1.toBigInteger()
 
     fun compactAddLength(input: ByteArray): ByteArray {
         val length = input.size
@@ -44,7 +44,7 @@ object U8a {
                 re += 1.toBigInteger()
                 return toArrayLikeLE(re, 2)
             }
-            value <= MAX_U16 -> {
+            value <= MAX_U32 -> {
                 var re = value
                 re = re shl 2
                 re += 2.toBigInteger()
