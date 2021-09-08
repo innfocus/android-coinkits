@@ -1,6 +1,7 @@
 package tech.act.coinkits.centrality.utils
 
 import java.math.BigInteger
+import kotlin.math.ceil
 
 object U8a {
     private var MAX_U8 = 2.toBigInteger().pow(8 - 2) - 1.toBigInteger()
@@ -14,9 +15,13 @@ object U8a {
         return rs
     }
 
-    fun toArrayLikeLE(value: BigInteger, byteLength: Int): ByteArray {
+    fun toArrayLikeLE(value: BigInteger, byteLength: Int = -1): ByteArray {
+        var length = byteLength
+        if (length == -1) {
+            length = ceil(value.bitLength().toDouble() / 8.0).toInt()
+        }
         var q = value
-        val res = ByteArray(byteLength)
+        val res = ByteArray(length)
         var i = 0
         while (q != 0.toBigInteger()) {
             val b = q.and(0xff.toBigInteger())
@@ -24,7 +29,7 @@ object U8a {
             res[i] = b.toByte()
             i += 1
         }
-        while (i < byteLength) {
+        while (i < length) {
             res[i] = 0
             i += 1
         }
@@ -51,7 +56,7 @@ object U8a {
                 return toArrayLikeLE(re, 4)
             }
             else -> {
-                val u8a = toArrayLikeLE(value, 4)
+                val u8a = toArrayLikeLE(value)
                 var length = u8a.size
                 while (u8a[length - 1] == 0.toByte()) {
                     length -= 1
