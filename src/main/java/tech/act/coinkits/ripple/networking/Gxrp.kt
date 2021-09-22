@@ -111,9 +111,12 @@ class Gxrp {
         call.enqueue(object : Callback<JsonElement> {
             override fun onResponse(call: Call<JsonElement>, response: Response<JsonElement>) {
                 val body = response.body()
-                if (body!!.isJsonObject) {
-                    completionHandler.completionHandler(XRPTransaction.parser(body.asJsonObject), null)
-                }else{
+                if (body != null && body.isJsonObject) {
+                    completionHandler.completionHandler(
+                        XRPTransaction.parser(body.asJsonObject),
+                        null
+                    )
+                } else {
                     completionHandler.completionHandler(null, null)
                 }
             }
