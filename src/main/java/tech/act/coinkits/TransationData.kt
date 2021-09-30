@@ -31,13 +31,13 @@ class TransationData : Serializable {
 */
 
 fun Array<BTCTransactionInOutData>.exclude(addresses: Array<String>): Array<BTCTransactionInOutData> {
-    val converted = addresses.map {it.toLowerCase()}
-    return filter { !converted.contains(it.address.toLowerCase())}.toTypedArray()
+    val converted = addresses.map { it.lowercase(Locale.getDefault()) }
+    return filter { !converted.contains(it.address.lowercase(Locale.getDefault()))}.toTypedArray()
 }
 
 fun Array<BTCTransactionInOutData>.filter(addresses: Array<String>): Array<BTCTransactionInOutData> {
-    val converted = addresses.map {it.toLowerCase()}
-    return filter { converted.contains(it.address.toLowerCase())}.toTypedArray()
+    val converted = addresses.map { it.lowercase(Locale.getDefault()) }
+    return filter { converted.contains(it.address.lowercase(Locale.getDefault()))}.toTypedArray()
 }
 
 fun Array<BTCTransactionData>.toTransactionDatas(addresses: Array<String>): Array<TransationData> {
@@ -64,13 +64,13 @@ fun BTCTransactionData.toTransactionData(addresses: Array<String>): TransationDa
 */
 
 fun Array<ADATransactionInOut>.exclude(addresses: Array<String>): Array<ADATransactionInOut> {
-    val converted = addresses.map {it.toLowerCase()}
-    return filter { !converted.contains(it.address.toLowerCase())}.toTypedArray()
+    val converted = addresses.map { it.lowercase(Locale.getDefault()) }
+    return filter { !converted.contains(it.address.lowercase(Locale.getDefault()))}.toTypedArray()
 }
 
 fun Array<ADATransactionInOut>.filterAddress(addresses: Array<String>): Array<ADATransactionInOut> {
-    val converted = addresses.map {it.toLowerCase()}
-    return filter { converted.contains(it.address.toLowerCase())}.toTypedArray()
+    val converted = addresses.map { it.lowercase(Locale.getDefault()) }
+    return filter { converted.contains(it.address.lowercase(Locale.getDefault()))}.toTypedArray()
 }
 
 fun Array<ADATransaction>.toTransactionDatas(addresses: Array<String>): Array<TransationData> {
@@ -101,27 +101,28 @@ fun Array<XRPTransactionItem>.toTransactionDatas(address: String): Array<Transat
 }
 
 fun XRPTransactionItem.toTransactionData(address: String): TransationData {
-    val tran            = TransationData()
-    tran.amount         = tx!!.amount / XRPCoin
-    tran.fee            = tx!!.fee / XRPCoin
-    tran.iD             = hash
-    tran.fromAddress    = tx!!.account
-    tran.toAddress      = tx!!.destination
-    tran.date           = date.toDate("yyyy-MM-dd'T'HH:mm:ssZ")
-    tran.coin           = ACTCoin.Ripple
-    tran.isSend         = tran.fromAddress.toLowerCase() == address.toLowerCase()
+    val tran = TransationData()
+    tran.amount = tx!!.amount / XRPCoin
+    tran.fee = tx!!.fee / XRPCoin
+    tran.iD = hash
+    tran.fromAddress = tx!!.account
+    tran.toAddress = tx!!.destination
+    tran.date = date.toDate("yyyy-MM-dd'T'HH:mm:ssZ")
+    tran.coin = ACTCoin.Ripple
+    tran.isSend =
+        tran.fromAddress.lowercase(Locale.getDefault()) == address.lowercase(Locale.getDefault())
     try {
         val memoNetwork = MemoData("", null)
-        var memoText : String? = null
-        var destinationTag : UInt? = null
+        var memoText: String? = null
+        var destinationTag: UInt? = null
         if (!tx!!.memos.isNullOrEmpty()) {
-            val memo            = tx!!.memos.first()
-            memoText            = memo.memoData.fromHexToByteArray().toString(Charsets.UTF_8)
-            memoNetwork.memo    = memoText
+            val memo = tx!!.memos.first()
+            memoText = memo.memoData.fromHexToByteArray().toString(Charsets.UTF_8)
+            memoNetwork.memo = memoText
         }
 
         if (!tx!!.destinationTag.isNullOrEmpty()) {
-            destinationTag             = tx!!.destinationTag.toUIntOrNull() ?: null
+            destinationTag = tx!!.destinationTag.toUIntOrNull() ?: null
             memoNetwork.destinationTag = destinationTag
         }
 
@@ -129,7 +130,8 @@ fun XRPTransactionItem.toTransactionData(address: String): TransationData {
             tran.memoNetwork = memoNetwork
         }
 
-    }catch (e: NoSuchElementException){}
+    } catch (e: NoSuchElementException) {
+    }
     return tran
 }
 

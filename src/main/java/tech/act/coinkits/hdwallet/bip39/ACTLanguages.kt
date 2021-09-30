@@ -1,5 +1,7 @@
 package tech.act.coinkits.hdwallet.bip39
 
+import java.util.*
+
 enum class ACTLanguages {
     English {
         override fun words() = "".englishMnemonics()
@@ -19,9 +21,9 @@ enum class ACTLanguages {
 
         fun types(): Array<ACTLanguages> = arrayOf(ACTLanguages.English, ACTLanguages.Japanese, ACTLanguages.Chinese)
 
-        fun delectTypeWithWord(word: String) : ACTLanguages? {
-            val textFormated    = word.trim().toLowerCase()
-            val lans            = ACTLanguages.types()
+        fun delectTypeWithWord(word: String): ACTLanguages? {
+            val textFormated = word.trim().lowercase(Locale.getDefault())
+            val lans = types()
             for (i in 0 until lans.count()) {
                 if (lans[i].words().contains(textFormated)) {
                     return lans[i]
@@ -33,12 +35,13 @@ enum class ACTLanguages {
         fun detectTypeWithMnemonic(mnemonic: String) : ACTLanguages? {
             val lans = mutableListOf<ACTLanguages>()
             mnemonic.split(" ").forEach {
-                val word    = it.toString().trim().toLowerCase()
-                val lan     = ACTLanguages.delectTypeWithWord(word)
+                val word = it.trim().lowercase(Locale.getDefault())
+                val lan = delectTypeWithWord(word)
                 if (lans.count() < 2 &&
                     word != "" &&
                     lan != null &&
-                    !lans.contains(lan)) {
+                    !lans.contains(lan)
+                ) {
                     lans.add(lan)
                 }
             }

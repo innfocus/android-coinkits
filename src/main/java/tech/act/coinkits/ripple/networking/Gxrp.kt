@@ -17,6 +17,9 @@ import tech.act.coinkits.hdwallet.bip44.ACTAddress
 import tech.act.coinkits.ripple.model.*
 import tech.act.coinkits.ripple.model.transaction.XRPMemo
 import tech.act.coinkits.ripple.model.transaction.XRPTransactionRaw
+import java.util.*
+import kotlin.NoSuchElementException
+import kotlin.collections.HashMap
 
 class XRPAPI {
     companion object {
@@ -79,7 +82,10 @@ class Gxrp {
                         if (balances.isNotEmpty()) {
                             try {
                                 val onlyXRP =
-                                    balances.filter { it.currency.toLowerCase() == ACTCoin.Ripple.symbolName().toLowerCase() }.map { it.value }
+                                    balances.filter {
+                                        it.currency.lowercase(Locale.getDefault()) == ACTCoin.Ripple.symbolName()
+                                            .lowercase(Locale.getDefault())
+                                    }.map { it.value }
                                 return completionHandler.completionHandler(onlyXRP.first(), null)
                             }catch (e: NoSuchElementException){
                                 return completionHandler.completionHandler(-1.0, null)

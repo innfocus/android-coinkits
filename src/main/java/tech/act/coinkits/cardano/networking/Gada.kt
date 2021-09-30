@@ -204,7 +204,7 @@ class Gada {
                                         arrayOf<ADATransaction>().plus(transactions).plus(transJoin)
                                     if (transactions.size < YOROIAPI.TX_HISTORY_RESPONSE_LIMIT) {
                                         completionHandler.completionHandler(sumTrans.distinctBy { it.transactionID }
-                                            .filter { it.state.toLowerCase() != "failed" }
+                                            .filter { it.state.lowercase(Locale.getDefault()) != "failed" }
                                             .toTypedArray(), null)
                                     } else {
                                         val last = sumTrans.first()
