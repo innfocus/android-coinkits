@@ -322,6 +322,7 @@ class CoinsManager : ICoinsManager {
                         toAddressStr,
                         serAddressStr,
                         amount,
+                        networkFee,
                         serviceFee,
                         networkMemo,
                         null,
@@ -581,6 +582,7 @@ class CoinsManager : ICoinsManager {
                             toAddressStr: String,
                             serAddressStr: String,
                             amount: Double,
+                            networkFee: Double,
                             serviceFee: Double,
                             networkMemo: MemoData?,
                             sequence: Int? = null,
@@ -589,12 +591,12 @@ class CoinsManager : ICoinsManager {
                 ?: return completionHandler.completionHandler("", false, "Not supported")
         val priKey = prvKeys.first()
         val memo = if (networkMemo != null) XRPMemo(networkMemo.memo, networkMemo.destinationTag) else null
-        Gxrp.shared.sendCoin(priKey, fromAddress, toAddressStr, amount, memo, sequence, object : XRPSubmitTxtHandle {
+        Gxrp.shared.sendCoin(priKey, fromAddress, toAddressStr, amount, networkFee, memo, sequence, object : XRPSubmitTxtHandle {
             override fun completionHandler(transID: String, sequence: Int?, success: Boolean, errStr: String) {
                 completionHandler.completionHandler(transID, success, errStr)
                 /* Check to send service fee */
                 if (success && serAddressStr.isAddress(ACTCoin.Ripple) && serviceFee > 0) {
-                    sendXRPCoin(fromAddress, serAddressStr, "", serviceFee, 0.0, null, (sequence!! + 1), object : SendCoinHandle {
+                    sendXRPCoin(fromAddress, serAddressStr, "", serviceFee, networkFee, 0.0, null, (sequence!! + 1), object : SendCoinHandle {
                         override fun completionHandler(transID: String, success: Boolean, errStr: String) {}
                     })
                 }

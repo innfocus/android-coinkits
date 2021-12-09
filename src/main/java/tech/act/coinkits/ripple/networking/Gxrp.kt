@@ -137,6 +137,7 @@ class Gxrp {
                  address            : ACTAddress,
                  toAddressStr       : String,
                  amount             : Double,
+                 networkFee         : Double,
                  memo               : XRPMemo?  = null,
                  sequence           : Int?      = null,
                  completionHandler  : XRPSubmitTxtHandle) {
@@ -148,8 +149,7 @@ class Gxrp {
                 val acc = accInfo ?: return completionHandler.completionHandler("", null, false, err?.localizedMessage ?: "")
                 val balance             = acc.accountData.balance.toDoubleOrNull() ?: 0.0
                 // Around = 10 unit of XRP
-//                if (balance < ((amount + nw.coin.feeDefault() + nw.coin.minimumValue()) * XRPCoin) - 10) {
-                if (balance < ((amount + nw.coin.feeDefault() + nw.coin.minimumAmount()) * XRPCoin)) {
+                if (balance < (((amount + nw.coin.minimumAmount()) * XRPCoin) + networkFee)) {
                     return completionHandler.completionHandler("", null, false, "Insufficient Funds")
                 }
                 val tranRaw             = XRPTransactionRaw()
@@ -159,7 +159,7 @@ class Gxrp {
                 /* Expire this transaction if it doesn't execute within ~5 minutes: "maxLedgerVersionOffset": 75 */
                 tranRaw.lastLedgerSeq   = acc.ledgerIndex + 75
                 tranRaw.amount          = amount * XRPCoin
-                tranRaw.fee             = nw.coin.feeDefault() * XRPCoin
+                tranRaw.fee             = networkFee
                 tranRaw.memo            = memo
                 val signed = tranRaw.sign(prvKey) ?: return completionHandler.completionHandler("", tranRaw.sequence, false, err?.localizedMessage ?: "")
                 jsonRPC.submit(signed.txBlob, object : XRPSubmitHandle {
