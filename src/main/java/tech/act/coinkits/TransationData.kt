@@ -104,10 +104,10 @@ fun XRPTransactionItem.toTransactionData(address: String): TransationData {
     val tran = TransationData()
     tran.amount = tx!!.amount / XRPCoin
     tran.fee = tx!!.fee / XRPCoin
-    tran.iD = hash
+    tran.iD = tx!!.hash
     tran.fromAddress = tx!!.account
     tran.toAddress = tx!!.destination
-    tran.date = date.toDate("yyyy-MM-dd'T'HH:mm:ssZ")
+    tran.date = Date((tx!!.date +  946684800) * 1000)
     tran.coin = ACTCoin.Ripple
     tran.isSend =
         tran.fromAddress.lowercase(Locale.getDefault()) == address.lowercase(Locale.getDefault())

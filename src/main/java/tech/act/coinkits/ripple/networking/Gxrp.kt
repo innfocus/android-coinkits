@@ -1,15 +1,14 @@
 package tech.act.coinkits.ripple.networking
 
+import com.google.gson.JsonArray
 import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.GET
-import retrofit2.http.Path
-import retrofit2.http.QueryMap
-import retrofit2.http.Url
+import retrofit2.http.*
 import tech.act.coinkits.CoinsManager
 import tech.act.coinkits.hdwallet.bip32.ACTCoin
 import tech.act.coinkits.hdwallet.bip32.ACTPrivateKey
@@ -17,20 +16,20 @@ import tech.act.coinkits.hdwallet.bip44.ACTAddress
 import tech.act.coinkits.ripple.model.*
 import tech.act.coinkits.ripple.model.transaction.XRPMemo
 import tech.act.coinkits.ripple.model.transaction.XRPTransactionRaw
-import java.util.*
-import kotlin.NoSuchElementException
-import kotlin.collections.HashMap
 
 class XRPAPI {
     companion object {
-        const val server        = "https://data.ripple.com/v2/"
-        const val serverTest    = "https://testnet.data.api.ripple.com/v2/"
         const val balance       = "accounts/xxx/balances?currency=XRP"
         const val transactions  = "accounts/xxx/transactions?limit=20&type=Payment"
+        const val ledgerServer  = "https://s1.ripple.com:51234/"
+        const val ledgerServerTest  = "https://s.altnet.rippletest.net:51234/"
     }
 }
 
 private interface IGxrp {
+    @POST("/")
+    fun query(@Body params: JsonObject): Call<JsonObject>
+
     @GET
     fun getBalance(@Url url: String): Call<JsonElement>
 
@@ -56,8 +55,8 @@ class Gxrp {
     companion object {
         val shared = Gxrp()
     }
-    private val apiService      = IGxrp.create(XRPAPI.server)
-    private val apiTestService  = IGxrp.create(XRPAPI.serverTest)
+    private val apiService      = IGxrp.create(XRPAPI.ledgerServer)
+    private val apiTestService  = IGxrp.create(XRPAPI.ledgerServerTest)
 
     private fun getService(): IGxrp {
         val nw = CoinsManager.shared.currentNetwork(ACTCoin.Ripple) ?: return apiService
@@ -70,64 +69,91 @@ class Gxrp {
     fun getBalance(address          : String,
                    completionHandler: XRPBalanceHandle)
     {
-        val url = XRPAPI.balance.replace("xxx", address)
-        val call = getService().getBalance(url)
-        call.enqueue(object: Callback<JsonElement> {
-            override fun onResponse(call: Call<JsonElement>, response: Response<JsonElement>) {
-                val body = response.body() ?: return completionHandler.completionHandler(-1.0, null)
-                if (body.isJsonObject) {
-                    val balancesJson = body.asJsonObject["balances"]
-                    if (balancesJson.isJsonArray) {
-                        val balances = XRPBalance.parser(balancesJson.asJsonArray)
-                        if (balances.isNotEmpty()) {
-                            try {
-                                val onlyXRP =
-                                    balances.filter {
-                                        it.currency.lowercase(Locale.getDefault()) == ACTCoin.Ripple.symbolName()
-                                            .lowercase(Locale.getDefault())
-                                    }.map { it.value }
-                                return completionHandler.completionHandler(onlyXRP.first(), null)
-                            }catch (e: NoSuchElementException){
-                                return completionHandler.completionHandler(-1.0, null)
-                            }
 
+        val params = JsonArray()
+
+        val account = JsonObject()
+        account.addProperty("account", address)
+
+        params.add(account)
+        val payload = JsonObject()
+        payload.addProperty("method", "account_info")
+        payload.add("params", params)
+
+        val call = getService().query(payload)
+
+        call.enqueue(object : Callback<JsonObject> {
+            override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                if (response.isSuccessful) {
+                    val body =
+                        response.body() ?: return completionHandler.completionHandler(0.0, null)
+                    if (body.isJsonObject) {
+                        val resultJson = body.getAsJsonObject("result")
+                        val status = resultJson.get("status").asString
+                        return if (status.equals(("success"))) {
+                            val accountJson = resultJson.getAsJsonObject("account_data")
+                            var balance = accountJson.get("Balance").asDouble
+                            balance /= XRPCoin
+                            completionHandler.completionHandler(balance, null)
+                        } else {
+                            completionHandler.completionHandler(0.0, null)
                         }
                     }
+                    completionHandler.completionHandler(0.0, null)
+                } else {
+                    completionHandler.completionHandler(0.0, null)
+
                 }
-                completionHandler.completionHandler(-1.0, null)
             }
 
-            override fun onFailure(call: Call<JsonElement>, t: Throwable) {
+            override fun onFailure(call: Call<JsonObject>, t: Throwable) {
                 completionHandler.completionHandler(0.0, t)
             }
         })
     }
 
-    fun getTransactions(address          : String,
-                        marker           : String,
-                        completionHandler: XRPTransactionsHandle) {
-        val data = HashMap<String, String>()
-        data["limit"] = "100"
-        data["type"] = "Payment"
-        data["descending"] = "true"
-        if (marker.isNotEmpty()) {
-            data["marker"] = marker
+    fun getTransactions(
+        address: String,
+        marker: JsonObject?,
+        completionHandler: XRPTransactionsHandle
+    ) {
+        val params = JsonArray()
+
+        val account = JsonObject()
+        account.addProperty("account", address)
+        account.addProperty("limit", 100)
+        if (marker != null) {
+            account.add("marker", marker)
         }
-        val call = getService().transactions(address, data)
-        call.enqueue(object : Callback<JsonElement> {
-            override fun onResponse(call: Call<JsonElement>, response: Response<JsonElement>) {
-                val body = response.body()
-                if (body != null && body.isJsonObject) {
-                    completionHandler.completionHandler(
-                        XRPTransaction.parser(body.asJsonObject),
-                        null
-                    )
+        params.add(account)
+        val payload = JsonObject()
+        payload.addProperty("method", "account_tx")
+        payload.add("params", params)
+
+        val call = getService().query(payload)
+
+        call.enqueue(object : Callback<JsonObject> {
+            override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                if (response.isSuccessful) {
+                    val body =
+                        response.body() ?: return completionHandler.completionHandler(null, null)
+                    if (body.isJsonObject) {
+                        val resultJson = body.getAsJsonObject("result")
+                        val status = resultJson.get("status").asString
+                        return if (status.equals(("success"))) {
+                            completionHandler.completionHandler(XRPTransaction.parser(resultJson), null)
+                        } else {
+                            completionHandler.completionHandler(null, null)
+                        }
+                    }
+                    completionHandler.completionHandler(null, null)
                 } else {
                     completionHandler.completionHandler(null, null)
+
                 }
             }
 
-            override fun onFailure(call: Call<JsonElement>, t: Throwable) {
+            override fun onFailure(call: Call<JsonObject>, t: Throwable) {
                 completionHandler.completionHandler(null, t)
             }
         })

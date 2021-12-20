@@ -2,15 +2,16 @@ package tech.act.coinkits.ripple.model
 
 import com.google.gson.Gson
 import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
 import com.google.gson.annotations.SerializedName
 
 class XRPTransaction (
     @SerializedName("marker")
-    val marker                  : String?   = "",
-    @SerializedName("count")
+    val marker                  : JsonObject?,
+    @SerializedName("limit")
     val count                   : Int   = 0,
-    @SerializedName("result")
+    @SerializedName("status")
     val result                  : String   = "",
     @SerializedName("transactions")
     private val _transactions    : JsonElement
@@ -31,10 +32,6 @@ class XRPTransaction (
 }
 
 class XRPTransactionItem(
-    @SerializedName("hash")
-    val hash                    : String   = "",
-    @SerializedName("date")
-    val date                    : String   = "",
     @SerializedName("tx")
     private val _tx             : JsonElement,
     @SerializedName("meta")
@@ -60,6 +57,10 @@ class XRPTransactionItem(
 }
 
 class XRPTX(
+    @SerializedName("hash")
+    val hash                    : String   = "",
+        @SerializedName("date")
+    val date                    : Long   = 0,
     @SerializedName("TransactionType")
     val transactionType             : String   = "",
     @SerializedName("Amount")
