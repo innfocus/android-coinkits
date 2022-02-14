@@ -2,13 +2,13 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 32
 
     ext.kotlin_version = '1.6.10'
 
     defaultConfig {
         minSdkVersion 23
-        targetSdkVersion 31
+        targetSdkVersion 32
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 //        flavorDimensions "mode"
@@ -53,10 +53,10 @@ dependencies {
     implementation 'org.whispersystems:curve25519-android:0.5.0'
     implementation 'com.google.guava:guava:31.0.1-android'
     //network
-    implementation 'com.google.code.gson:gson:2.8.9'
+    implementation 'com.google.code.gson:gson:2.9.0'
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
-    implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.3'
+    implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.4'
     implementation 'com.squareup.retrofit2:adapter-rxjava2:2.9.0'
 
     //RX
