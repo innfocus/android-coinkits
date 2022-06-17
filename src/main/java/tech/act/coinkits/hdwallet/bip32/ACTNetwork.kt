@@ -55,6 +55,19 @@ enum class ACTCoin(val assetId: Int = 0) {
         override fun baseApiUrl()       = ""
         override fun allowNewAddress()  = true
     },
+    XCoin {
+        override fun feeDefault()       = 0.0
+        override fun minimumAmount()    = 0.0
+        override fun supportMemo()      = false
+        override fun nameCoin()         = "XCoin"
+        override fun symbolName()       = "XCW"
+        override fun minimumValue()     = 0.0001
+        override fun unit()             = BigDecimal(1000000000000000000)
+        override fun regex()            = "(?:((0x|0X|)[a-fA-F0-9]{40,}))"
+        override fun algorithm()        = Algorithm.Secp256k1
+        override fun baseApiUrl()       = ""
+        override fun allowNewAddress()  = false
+    },
     Ripple{
         override fun feeDefault()       = 0.000012
         override fun minimumAmount()    = 10.0
@@ -120,6 +133,7 @@ class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {
             ACTCoin.Cardano     -> 1815
             ACTCoin.Ripple      -> 144
             ACTCoin.Centrality -> 392
+            ACTCoin.XCoin       -> 868
         }
     }
 
@@ -166,6 +180,7 @@ class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {
             ACTCoin.Cardano     -> if (chain == Change.Internal) 0  else 50
             ACTCoin.Ripple      -> if (chain == Change.Internal) 0  else 1
             ACTCoin.Centrality  -> if (chain == Change.Internal) 0  else 1
+            ACTCoin.XCoin       -> if (chain == Change.Internal) 0  else 1
         }
     }
 
@@ -176,6 +191,7 @@ class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {
             ACTCoin.Cardano     -> if (chain == Change.Internal) 0 else 0
             ACTCoin.Ripple      -> if (chain == Change.Internal) 0 else 0
             ACTCoin.Centrality -> if (chain == Change.Internal) 0 else 0
+            ACTCoin.XCoin       -> if (chain == Change.Internal) 0 else 0
         }
     }
 
@@ -188,6 +204,7 @@ class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {
                     ACTCoin.Cardano     -> "https://cardanoexplorer.com"
                     ACTCoin.Ripple      -> "https://bithomp.com"
                     ACTCoin.Centrality -> "https://uncoverexplorer.com"
+                    ACTCoin.XCoin       -> "Explorer XCoin"
                 }
             }
             true -> {
@@ -197,6 +214,7 @@ class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {
                     ACTCoin.Cardano     -> "https://cardanoexplorer.com"
                     ACTCoin.Ripple      -> "https://test.bithomp.com"
                     ACTCoin.Centrality -> "https://uncoverexplorer.com"
+                    ACTCoin.XCoin       -> "Explorer XCoin"
                 }
             }
         }

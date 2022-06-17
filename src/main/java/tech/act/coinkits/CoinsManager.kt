@@ -83,6 +83,7 @@ class CoinsManager : ICoinsManager {
             ACTCoin.Ethereum.symbolName() to ACTNetwork(ACTCoin.Ethereum, true),
             ACTCoin.Cardano.symbolName() to ACTNetwork(ACTCoin.Cardano, false),
             ACTCoin.Ripple.symbolName() to ACTNetwork(ACTCoin.Ripple, true),
+            ACTCoin.XCoin.symbolName() to ACTNetwork(ACTCoin.XCoin, true),
             ACTCoin.Centrality.symbolName() to ACTNetwork(ACTCoin.Centrality, false))
     var mnemonicRecover = ""
     var mnemonic = ""
