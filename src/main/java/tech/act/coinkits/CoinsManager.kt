@@ -78,7 +78,7 @@ class CoinsManager : ICoinsManager {
     private var extendPrvKeysNumber = mutableMapOf<String, Int>()
     private var addressesManager = mutableMapOf<String, Array<ACTAddress>>()
     private var coinsSupported = arrayListOf(ACTCoin.Bitcoin, ACTCoin.Ethereum, ACTCoin.Cardano, ACTCoin.Ripple,
-        ACTCoin.Centrality, ACTCoin.Centrality)
+        ACTCoin.Centrality, ACTCoin.Centrality, ACTCoin.XCoin)
     private var networkManager = mutableMapOf(ACTCoin.Bitcoin.symbolName() to ACTNetwork(ACTCoin.Bitcoin, true),
             ACTCoin.Ethereum.symbolName() to ACTNetwork(ACTCoin.Ethereum, true),
             ACTCoin.Cardano.symbolName() to ACTNetwork(ACTCoin.Cardano, false),
@@ -199,6 +199,9 @@ class CoinsManager : ICoinsManager {
                     coin.assetId,
                     completionHandler)
                 }
+                ACTCoin.XCoin -> {
+
+                }
             }
         } else {
             completionHandler.completionHandler(0.0, false)
@@ -220,6 +223,9 @@ class CoinsManager : ICoinsManager {
                 }
                 ACTCoin.Ripple -> {
                     getXRPTransactions(adds.first(), moreParam, completionHandler)
+                }
+                ACTCoin.XCoin ->{
+
                 }
             }
         } else {
@@ -329,6 +335,9 @@ class CoinsManager : ICoinsManager {
                         networkMemo,
                         null,
                         completionHandler)
+            }
+            ACTCoin.XCoin -> {
+                
             }
         }
     }
