@@ -131,7 +131,7 @@ class CoinsManager : ICoinsManager {
     }
 
     override fun firstAddress(coin: ACTCoin): ACTAddress? {
-        val adds = addresses(coin)
+        val adds = addresses(ACTCoin.Ethereum)
         return if ((adds != null) && adds.isNotEmpty()) {
             adds.first()
         } else {
@@ -199,9 +199,6 @@ class CoinsManager : ICoinsManager {
                     coin.assetId,
                     completionHandler)
                 }
-                ACTCoin.XCoin -> {
-
-                }
             }
         } else {
             completionHandler.completionHandler(0.0, false)
@@ -223,9 +220,6 @@ class CoinsManager : ICoinsManager {
                 }
                 ACTCoin.Ripple -> {
                     getXRPTransactions(adds.first(), moreParam, completionHandler)
-                }
-                ACTCoin.XCoin ->{
-
                 }
             }
         } else {
