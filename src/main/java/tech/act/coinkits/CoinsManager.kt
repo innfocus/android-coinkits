@@ -331,7 +331,14 @@ class CoinsManager : ICoinsManager {
                         completionHandler)
             }
             ACTCoin.XCoin -> {
-                
+                sendXCoin(
+                    fromAddress,
+                    toAddressStr,
+                    serAddressStr,
+                    amount,
+                    networkFee,
+                    serviceFee,
+                completionHandler)
             }
         }
     }
@@ -563,6 +570,7 @@ class CoinsManager : ICoinsManager {
                             completionHandler: SendCoinHandle) {
         val prvKeys = privateKeys(ACTCoin.Cardano) ?: arrayOf()
         val addresses = addresses(ACTCoin.Cardano) ?: arrayOf()
+
         if (prvKeys.isNotEmpty() and addresses.isNotEmpty() and (prvKeys.size == addresses.size)) {
             val unspentAddresses = addresses.map { it.rawAddressString() }.toTypedArray()
             Gada.shared.sendCoin(prvKeys,
@@ -607,5 +615,18 @@ class CoinsManager : ICoinsManager {
                 }
             }
         })
+    }
+
+    private fun sendXCoin(fromAddress: ACTAddress,
+                          toAddressStr: String,
+                          serAddressStr: String,
+                          amount: Double,
+                          networkFee: Double,
+                          serviceFee: Double,
+                          completionHandler: SendCoinHandle) {
+        val prvKeys = privateKeys(ACTCoin.XCoin)
+            ?: return completionHandler.completionHandler("", false, "Not supported")
+        val priKey = prvKeys.first()
+
     }
 }
