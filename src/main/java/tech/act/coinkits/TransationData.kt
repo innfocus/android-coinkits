@@ -106,7 +106,12 @@ fun XRPTransactionItem.toTransactionData(address: String): TransationData {
     tran.fee = tx!!.fee / XRPCoin
     tran.iD = tx!!.hash
     tran.fromAddress = tx!!.account
-    tran.toAddress = tx!!.destination
+    if(tx!!.transactionType == "Payment") {
+        tran.toAddress = tx!!.destination
+    } else {
+        tran.toAddress = ""
+    }
+
     tran.date = Date((tx!!.date +  946684800) * 1000)
     tran.coin = ACTCoin.Ripple
     tran.isSend =

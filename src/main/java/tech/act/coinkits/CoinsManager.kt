@@ -330,16 +330,6 @@ class CoinsManager : ICoinsManager {
                         null,
                         completionHandler)
             }
-            ACTCoin.XCoin -> {
-                sendXCoin(
-                    fromAddress,
-                    toAddressStr,
-                    serAddressStr,
-                    amount,
-                    networkFee,
-                    serviceFee,
-                completionHandler)
-            }
         }
     }
 
@@ -615,18 +605,5 @@ class CoinsManager : ICoinsManager {
                 }
             }
         })
-    }
-
-    private fun sendXCoin(fromAddress: ACTAddress,
-                          toAddressStr: String,
-                          serAddressStr: String,
-                          amount: Double,
-                          networkFee: Double,
-                          serviceFee: Double,
-                          completionHandler: SendCoinHandle) {
-        val prvKeys = privateKeys(ACTCoin.XCoin)
-            ?: return completionHandler.completionHandler("", false, "Not supported")
-        val priKey = prvKeys.first()
-
     }
 }
