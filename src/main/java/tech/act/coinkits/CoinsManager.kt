@@ -131,7 +131,7 @@ class CoinsManager : ICoinsManager {
     }
 
     override fun firstAddress(coin: ACTCoin): ACTAddress? {
-        val adds = addresses(ACTCoin.Ethereum)
+        val adds = addresses(coin)
         return if ((adds != null) && adds.isNotEmpty()) {
             adds.first()
         } else {
