@@ -70,7 +70,7 @@ class XRPTX(
     @SerializedName("Account")
     val account                     : String   = "",
     @SerializedName("Destination")
-    val destination                 : String   = "",
+    val destination                 : String?   = "",
     @SerializedName("DestinationTag")
     val destinationTag              : String   = "",
     @SerializedName("Memos")
