@@ -210,7 +210,7 @@ class ACTNetwork constructor(val coin: ACTCoin, val isTestNet: Boolean) {
             true -> {
                 when(coin) {
                     ACTCoin.Bitcoin     -> "https://testnet.blockchain.info"
-                    ACTCoin.Ethereum    -> "https://ropsten.etherscan.io"
+                    ACTCoin.Ethereum    -> "https://goerli.etherscan.io"
                     ACTCoin.Cardano     -> "https://cardanoexplorer.com"
                     ACTCoin.Ripple      -> "https://test.bithomp.com"
                     ACTCoin.Centrality -> "https://uncoverexplorer.com"
