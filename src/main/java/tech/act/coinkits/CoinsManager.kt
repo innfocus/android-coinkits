@@ -219,6 +219,7 @@ class CoinsManager : ICoinsManager {
                 ACTCoin.Ripple -> {
                     getXRPTransactions(adds.first(), moreParam, completionHandler)
                 }
+                else -> {}
             }
         } else {
             completionHandler.completionHandler(arrayOf(), "", "")
@@ -327,6 +328,7 @@ class CoinsManager : ICoinsManager {
                         null,
                         completionHandler)
             }
+            else -> {}
         }
     }
 
