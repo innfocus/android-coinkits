@@ -6,6 +6,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import okhttp3.OkHttpClient
+import org.json.JSONException
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
@@ -267,6 +268,7 @@ class CentralityNetwork {
                                                                                                 // Submit tx
                                                                                                 submitExtrinsic(
                                                                                                     extrinsic.toHex(),
+                                                                                                    extrinsic.toString(),
                                                                                                     object :
                                                                                                         CennzSubmitExtrinsicHandle {
                                                                                                         override fun completionHandler(
@@ -600,6 +602,7 @@ class CentralityNetwork {
 
     fun submitExtrinsic(
         hash: String,
+        json: String,
         completionHandler: CennzSubmitExtrinsicHandle
     ) {
         val params = JsonArray()
@@ -626,7 +629,7 @@ class CentralityNetwork {
                             completionHandler.completionHandler(
                                 "",
                                 false,
-                                "$message - Error code: $code - Tx: $hash"
+                                "$message - Error code: $code - Tx: $hash - JSON: $json"
                             )
                         } else {
                             val extrinsicHash = data.get("result").asString
@@ -679,12 +682,19 @@ class CentralityNetwork {
                 } else {
                     val errorBody = response.errorBody()
                     if ((errorBody != null)) {
-                        val json = JSONObject(errorBody.string())
-                        val message = json.getString("message")
-                        completionHandler.completionHandler(
-                            0,
-                            message
-                        )
+                        try {
+                            val json = JSONObject(errorBody.string())
+                            val message = json.getString("message")
+                            completionHandler.completionHandler(
+                                0,
+                                message
+                            )
+                        } catch (e: JSONException) {
+                            completionHandler.completionHandler(
+                                0,
+                                errorBody.string()
+                            )
+                        }
                     } else {
                         completionHandler.completionHandler(0, "")
                     }
@@ -732,12 +742,19 @@ class CentralityNetwork {
                 } else {
                     val errorBody = response.errorBody()
                     if ((errorBody != null)) {
-                        val json = JSONObject(errorBody.string())
-                        val message = json.getString("message")
-                        completionHandler.completionHandler(
-                            emptyList(),
-                            message
-                        )
+                        try {
+                            val json = JSONObject(errorBody.string())
+                            val message = json.getString("message")
+                            completionHandler.completionHandler(
+                                emptyList(),
+                                message
+                            )
+                        } catch (e: JSONException) {
+                            completionHandler.completionHandler(
+                                emptyList(),
+                                errorBody.string()
+                            )
+                        }
                     } else {
                         completionHandler.completionHandler(emptyList(), "")
                     }
@@ -776,12 +793,19 @@ class CentralityNetwork {
                 } else {
                     val errorBody = response.errorBody()
                     if ((errorBody != null)) {
-                        val json = JSONObject(errorBody.string())
-                        val message = json.getString("message")
-                        completionHandler.completionHandler(
-                            null,
-                            message
-                        )
+                        try {
+                            val json = JSONObject(errorBody.string())
+                            val message = json.getString("message")
+                            completionHandler.completionHandler(
+                                null,
+                                message
+                            )
+                        } catch (e: JSONException) {
+                            completionHandler.completionHandler(
+                                null,
+                                errorBody.string()
+                            )
+                        }
                     } else {
                         completionHandler.completionHandler(null, "")
                     }
@@ -822,12 +846,19 @@ class CentralityNetwork {
                 } else {
                     val errorBody = response.errorBody()
                     if ((errorBody != null)) {
-                        val json = JSONObject(errorBody.string())
-                        val message = json.getString("message")
-                        completionHandler.completionHandler(
-                            false,
-                            message
-                        )
+                        try {
+                            val json = JSONObject(errorBody.string())
+                            val message = json.getString("message")
+                            completionHandler.completionHandler(
+                                false,
+                                message
+                            )
+                        } catch (e: JSONException) {
+                            completionHandler.completionHandler(
+                                false,
+                                errorBody.string()
+                            )
+                        }
                     } else {
                         completionHandler.completionHandler(false, "")
                     }

@@ -204,7 +204,7 @@ class Gada {
                                         arrayOf<ADATransaction>().plus(transactions).plus(transJoin)
                                     if (transactions.size < YOROIAPI.TX_HISTORY_RESPONSE_LIMIT) {
                                         completionHandler.completionHandler(sumTrans.distinctBy { it.transactionID }
-                                            .filter { it.state.toLowerCase() != "failed" }
+                                            .filter { it.state.lowercase(Locale.getDefault()) != "failed" }
                                             .toTypedArray(), null)
                                     } else {
                                         val last = sumTrans.first()
@@ -342,7 +342,7 @@ class Gada {
                                 var netFee = ceil(networkFee * ADACoin)
                                 // Network fee always > 0
                                 if (netFee <= 0) {
-                                    netFee = 0.12
+                                    netFee = 0.14 * ADACoin
                                 }
                                 var availableAmount = floor(amount)
                                 val totalAmount = availableAmount + netFee + walletServiceFee
@@ -389,7 +389,7 @@ class Gada {
                                 var fee = spentCoins - (availableAmount + walletServiceFee + change)
                                 // Network fee always > 0
                                 if (fee <= 0) {
-                                    fee = 0.12
+                                    fee = 0.14 * ADACoin
                                 }
                                 tx.setFee(fee.toLong())
                                 tx.setTtl(getTimeSlot())
