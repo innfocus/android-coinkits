@@ -40,6 +40,8 @@ class ACTAddress {
                     val pub = CarPublicKey(publicKey!!.raw!!)
                     return CarAddress(pub, publicKey!!.chainCode).raw()
                 }
+
+                else -> {}
             }
         }else if (addressStr != null) {
             when(network.coin) {
@@ -62,6 +64,8 @@ class ACTAddress {
                 ACTCoin.Cardano -> {
                     return CarAddress(addressStr = addressStr).raw()
                 }
+
+                else -> {}
             }
         }
         return null
