@@ -248,53 +248,55 @@ class CentralityNetwork {
 
                                                                                 // Sign tx
                                                                                 val seed =
-                                                                                    CoinsManager.shared.getHDWallet()!!
-                                                                                        .calculateSeed(
+                                                                                    CoinsManager.shared.getHDWallet()
+                                                                                        ?.calculateSeed(
                                                                                             ACTNetwork(
                                                                                                 ACTCoin.Centrality,
                                                                                                 false
                                                                                             )
                                                                                         )
-                                                                                signExtrinsicBase(
-                                                                                    seed.toHexWithPrefix(),
-                                                                                    extrinsic,
-                                                                                    object :
-                                                                                        CennzCallbackHandle {
-                                                                                        override fun completionHandler(
-                                                                                            success: Boolean,
-                                                                                            error: String
-                                                                                        ) {
-                                                                                            if (success) {
-                                                                                                // Submit tx
-                                                                                                submitExtrinsic(
-                                                                                                    extrinsic.toHex(),
-                                                                                                    extrinsic.toString(),
-                                                                                                    object :
-                                                                                                        CennzSubmitExtrinsicHandle {
-                                                                                                        override fun completionHandler(
-                                                                                                            extrinsicHash: String,
-                                                                                                            success: Boolean,
-                                                                                                            error: String
-                                                                                                        ) {
-                                                                                                            completionHandler.completionHandler(
-                                                                                                                extrinsic,
-                                                                                                                extrinsicHash,
-                                                                                                                success,
-                                                                                                                error
-                                                                                                            )
-                                                                                                        }
+                                                                                seed?.let {
+                                                                                    signExtrinsicBase(
+                                                                                        it.toHexWithPrefix(),
+                                                                                        extrinsic,
+                                                                                        object :
+                                                                                            CennzCallbackHandle {
+                                                                                            override fun completionHandler(
+                                                                                                success: Boolean,
+                                                                                                error: String
+                                                                                            ) {
+                                                                                                if (success) {
+                                                                                                    // Submit tx
+                                                                                                    submitExtrinsic(
+                                                                                                        extrinsic.toHex(),
+                                                                                                        extrinsic.toString(),
+                                                                                                        object :
+                                                                                                            CennzSubmitExtrinsicHandle {
+                                                                                                            override fun completionHandler(
+                                                                                                                extrinsicHash: String,
+                                                                                                                success: Boolean,
+                                                                                                                error: String
+                                                                                                            ) {
+                                                                                                                completionHandler.completionHandler(
+                                                                                                                    extrinsic,
+                                                                                                                    extrinsicHash,
+                                                                                                                    success,
+                                                                                                                    error
+                                                                                                                )
+                                                                                                            }
 
-                                                                                                    })
-                                                                                            } else {
-                                                                                                completionHandler.completionHandler(
-                                                                                                    null,
-                                                                                                    "",
-                                                                                                    false,
-                                                                                                    "Sign error"
-                                                                                                )
+                                                                                                        })
+                                                                                                } else {
+                                                                                                    completionHandler.completionHandler(
+                                                                                                        null,
+                                                                                                        "",
+                                                                                                        false,
+                                                                                                        "Sign error"
+                                                                                                    )
+                                                                                                }
                                                                                             }
-                                                                                        }
-                                                                                    })
+                                                                                        })
+                                                                                }
 
                                                                             }
                                                                         })
